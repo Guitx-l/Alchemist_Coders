@@ -15,4 +15,4 @@ https://robot-soccer-kit.github.io/referee
 
 Utiliser la version 3.12 de python car python 3.13 n'a pas été testé avec le game controleur ; Donc il peut y avoir des erreurs potentielles. Pour information le game controleur tourne avec la version 3.11 mais est compatible avec la version 3.12.
 
-
+la majorité du travail se fera sur : https://robot-soccer-kit.github.io/programming

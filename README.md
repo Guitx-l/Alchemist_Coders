@@ -17,7 +17,7 @@ Utiliser la version 3.12 de python car python 3.13 n'a pas été testé avec le 
 
 la majorité du travail se fera sur : https://robot-soccer-kit.github.io/programming
 
-Installation/Mise à jour robot-soccer-kitdu package : fichier compatible windows et linux. Ne pas oublier de modifier les fichier pour transformer les mots "python" en "py"
+Installation/Mise à jour robot-soccer-kitdu package : fichier compatible windows et linux. # Ne pas oublier de modifier les fichier pour transformer les mots "python" en "py"
 
 driver rsk : https://github.com/robot-soccer-kit/robot-soccer-kit/tree/master/rsk
 

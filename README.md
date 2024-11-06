@@ -1,4 +1,4 @@
-# Robocup-equippe-1-rsk
+# Robocup-rsk
 
 # Documentation
 

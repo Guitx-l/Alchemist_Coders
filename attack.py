@@ -19,5 +19,6 @@ def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset: fl
     
     return (
         *shooter_pos,  # unpack operator
-        math.atan(abs(goal_pos[0] - shooter_pos[0]) / abs(goal_pos[0] - shooter_pos[0]))
+        math.atan(
+            abs(goal_pos[0] - shooter_pos[0]) / abs(goal_pos[0] - shooter_pos[0]))
         )

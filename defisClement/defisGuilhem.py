@@ -16,8 +16,6 @@ else :
     color = "green"
     colorennemis = "blue"
 
-c = int(input("indique ta couleur (0 pour Bleu et 1 pour Vert) : "))
-
 
 # ATENTION il faut definir la couleur et le coté
 #c Definir la valeur par défault de la couleur
@@ -67,10 +65,8 @@ with rsk.Client() as client:
         c = client.referee["Alchemist_Coder"][color]["x_positive"]
 
     except :
-        c = int(input("indique ta couleur (-1 côté gauche & 1 côté droit) : "))
+        c = int(input("indique le côté de ton equipe (-1 côté gauche & 1 côté droit) : "))
         # Il n'y a pas besoin de ré-attribuer c car il n'a pas été mofifié
-
-
 
 
 

@@ -1,5 +1,9 @@
 # Alchemist Coders
 
+Simulateur 
+
+py -m rsk.game_controller -s
+
 # Documentation
 
 https://robot-soccer-kit.github.io/

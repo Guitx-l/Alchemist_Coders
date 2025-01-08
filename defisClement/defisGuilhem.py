@@ -90,6 +90,23 @@ with rsk.Client() as client:
         pe1 = rbe1.pose
         pe2 = rbe2.pose
         pBalle = client.ball
+
+        """afin determiner contre quel robot le goal doit se défendre,
+        il est nécéssaire de definir une fonction pour déterminer quel robot est le plus à même de marque un but.
+        
+        Si sur l'ordre des x, un robot se trouve devant la balle il n'est pas dangereux, sauf s'il se rapproche trop vite ou est à une distance trop courte
+        si les deux robot se trouvent à des distance trop éloignées ou devant la balle les robot ne sont pas dangereux
+        
+        robot1 -> dangereux         : protection contre rb1
+        robot2 -> dangereux         : protection contre rb1
+        aucun robot -> dangereux    : passe en mode attaquant 
+        en transaction              : change de robot lorsqu'il se font la passe 
+        les 2 robots potentiellement dangereux :
+        le defenseur se place de manière à pouvoir se positionner rapidement en cas d'attaque de l'un des 2 robot ennemis"""
+
+
+
+
         # postition que le défenceur doit prendre pour se positionner au niveaux des cages
         """ ATTENTION à la couleur des joueurs
         pbut = - constants.defense_area_width car constants.defense_area_width 
@@ -101,6 +118,13 @@ with rsk.Client() as client:
         # direction go to
         dp1 = [0,0.61,pe1[2] + pi]
         dp2 = [pbut,yCage,0]
+
+
+
+
+
+
+
 
 
         rbp1.goto((dp1), wait=False)

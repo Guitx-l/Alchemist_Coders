@@ -3,6 +3,34 @@ from rsk import constants
 from math import pi
 
 
+""" afin determiner contre quel robot le goal doit se défendre,
+    il est nécéssaire de definir une fonction pour déterminer quel robot est le plus à même de marque un but.
+    
+    Si sur l'ordre des x, un robot se trouve devant la balle il n'est pas dangereux, sauf s'il se rapproche trop vite ou est à une distance trop courte
+    si les deux robot se trouvent à des distance trop éloignées ou devant la balle les robot ne sont pas dangereux
+
+    robot1 -> dangereux         : protection contre rb1
+    robot2 -> dangereux         : protection contre rb1
+    aucun robot -> dangereux    : passe en mode attaquant 
+    en transaction              : change de robot lorsqu'il se font la passe 
+    les 2 robots potentiellement dangereux :
+    le defenseur se place de manière à pouvoir se positionner rapidement en cas d'attaque de l'un des 2 robot ennemis"""
+
+
+def attaquantEnnemis(pBalle,pe1,pe2):
+    # Position + orientation (x [m], y [m], theta [rad])
+    if (pBalle[0] - pe1[0]) < -0.1 : # -0.1 = 10cm avant la balle
+        #pe1 n'est pas dangereux
+
+""" danger renvoie un int des robot ennemis dangereux :
+    0 = aucun robot dang. position attaque
+    1 = robot1 dang.
+    2 = robot2 dang.
+    3 = robot1 et robot2 dang.
+    4 = en transaction : si rb1 étais dang., alors rb2 est dang. et vice-versa"""
+    return(danger)
+
+
 
 def cages(pe1,pBalle):
     global yCage
@@ -57,6 +85,24 @@ with rsk.Client() as client:
         # postition que le défenceur doit prendre pour se positionner au niveaux des cages
         # ATTENTION pbut = - constants.defense_area_width car constants.defense_area_width 
         pbut = - constants.defense_area_width
+
+
+
+
+         """afin determiner contre quel robot le goal doit se défendre,
+        il est nécéssaire de definir une fonction pour déterminer quel robot est le plus à même de marque un but.
+        
+        Si sur l'ordre des x, un robot se trouve devant la balle il n'est pas dangereux, sauf s'il se rapproche trop vite ou est à une distance trop courte
+        si les deux robot se trouvent à des distance trop éloignées ou devant la balle les robot ne sont pas dangereux
+        
+        robot1 -> dangereux         : protection contre rb1
+        robot2 -> dangereux         : protection contre rb1
+        aucun robot -> dangereux    : passe en mode attaquant 
+        en transaction              : change de robot lorsqu'il se font la passe 
+        les 2 robots potentiellement dangereux :
+        le defenseur se place de manière à pouvoir se positionner rapidement en cas d'attaque de l'un des 2 robot ennemis"""
+
+
 
 
 

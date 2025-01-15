@@ -19,8 +19,29 @@ from math import pi
 
 def attaquantEnnemis(pBalle,pe1,pe2):
     # Position + orientation (x [m], y [m], theta [rad])
-    if (pBalle[0] - pe1[0]) < -0.1 : # -0.1 = 10cm avant la balle
-        #pe1 n'est pas dangereux
+    if (-0.1<pBalle[0] - pe1[0]) < 0.4 : # -0.1 = 10cm avant la balle
+        pe1Dang = True
+    elif (-0.4 < pBalle[1] - pe1[1] < 0.4) :
+        pe1Dang = True
+    else :
+        pe1Dang = False
+
+    if (-0.1<pBalle[0] - pe2[0]) < 0.4 : # -0.1 = 10cm avant la balle
+        pe2Dang = True
+    elif (-0.4 < pBalle[1] - pe2[1] < 0.4) :
+        pe2Dang = True
+    else :
+        pe2Dang = False
+    
+    if (pe1Dang == False and pe2Dang == False) :
+        danger = 0
+    elif (pe1Dang == True and pe2Dang == False) :
+        danger = 1
+    elif (pe1Dang == False and pe2Dang == True) :
+        danger = 2
+    elif (pe1Dang == True and pe2Dang == True) :
+        danger = 3
+
 
 """ danger renvoie un int des robot ennemis dangereux :
     0 = aucun robot dang. position attaque
@@ -110,8 +131,11 @@ with rsk.Client() as client:
         """ ATTENTION à la couleur des joueurs
         pbut = - constants.defense_area_width car constants.defense_area_width 
         """
-        pbut = - constants.defense_area_width
+        #pbut = - constants.defense_area_width
 
+        #détermine l'ennemis qui tirera la balle
+        attaquantEnnemis(pBalle,pe1,pe2)
+        
         cages(pe1,pBalle)
 
         # direction go to

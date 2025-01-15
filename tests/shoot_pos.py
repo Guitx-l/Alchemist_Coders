@@ -17,7 +17,7 @@ is_open = True
 white = pygame.Color('white')
 red = pygame.Color('red')
 goal_pos = np.array((640, 240))
-middle = np.array((0, 240))
+middle = np.array((320, 240))
 
 # Game loop.
 while is_open:

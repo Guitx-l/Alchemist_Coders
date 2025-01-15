@@ -2,20 +2,37 @@ import rsk
 from rsk import constants
 from math import pi
 
+"""
+with rsk.Client(host='192.168.100.2', key='') as client:
+
+    try :
+        #d détermine le coté du terrain
+        c = client.referee["Alchemist_Coder"][color]["x_positive"]
+        #if (color == 'Blue') :
+        #    c = 1
+        #else :
+        #    c = -1
 
 
+    except Exception as e :
+        #c = int(input("indique le côté de ton equipe (-1 côté gauche & 1 côté droit) : "))
+        # Il n'y a pas besoin de ré-attribuer c car il n'a pas été mofifié
+        print("erreur :")
+        print(e)
+        
 
 
-#définir la couleur pour pouvoir obtenir la var c
-rgb = bool(input(print("indique ta couleur (0 pour Bleu et 1 pour Vert) : ")))
-if rgb == 0 :
-    color = 'Blue'
-    #c Definir la valeur par défault de la couleur
-    c = 1
-else :
-    color = 'Green'
-    c = -1
-
+    
+    #définir la couleur pour pouvoir obtenir la var c
+    rgb = bool(input(print("indique ta couleur (0 pour Bleu et 1 pour Vert) : ")))
+    if rgb == 0 :
+        color = 'Blue'
+        #c Definir la valeur par défault de la couleur
+        c = 1
+    else :
+        color = 'Green'
+        c = -1
+"""
 # ATENTION il faut definir la couleur et le coté
 
 
@@ -25,6 +42,7 @@ else :
 yCage = 0
 
 def cages(pV1,pBalle):
+   
     global yCage
     if (pV1[0] - pBalle[0]) == 0 :
         a = 0
@@ -50,11 +68,9 @@ def cages(pV1,pBalle):
     return(yCage)
 
 
+color = ""
 
-
-
-
-with rsk.Client() as client:
+with rsk.Client(host='192.168.100.2', key='') as client:
 
     # une variable c définie le côté dans du terrain auquel notre équipe est attribué
     # la variable c sera positive ou négative en fonction du côté du terrain auquel est attribué notre équipe

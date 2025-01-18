@@ -4,7 +4,8 @@ import time
 
 
 with rsk.Client(host='127.0.0.1', key='1') as client:
-
+    client.blue1.leds(0, 255, 0)
+    client.blue1.leds(0, 255, 0)
     try:
         color = "blue"
         team = "teams"

@@ -30,6 +30,12 @@ class Robots:
         i = self.indexes[self.index]
         return self.robots[i[0]][i[1]]
 
+    def __len__(self):
+        return 4
+
+    def __getitem__(self, item: int) -> rsk.client.ClientRobot:
+        return self.robots[self.indexes[item][0]][self.indexes[item][1]]
+
 
 def is_inside_circle(point: np.ndarray[float], center: np.ndarray[float], radius: float) -> bool:
     return sum((center - point) ** 2) <= radius ** 2

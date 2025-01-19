@@ -17,10 +17,9 @@ class Robots:
             ("blue", 1),
             ("blue", 2)
         )
-        self.index = None
+        self.index = -1
 
     def __iter__(self):
-        self.index = -1
         return self
 
     def __next__(self) -> rsk.client.ClientRobot:
@@ -37,6 +36,10 @@ def is_inside_circle(point: np.ndarray[float], center: np.ndarray[float], radius
 
 def is_inside_rect(point: Iterable[float], bottomleft: Iterable[float], topright: Iterable[float]) -> bool:
     return bottomleft[0] <= point[0] <= topright[0] and bottomleft[1] <= point[1] <= topright[1]
+
+
+def is_inside_court(x: np.ndarray) -> bool:
+    return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
 
 
 if __name__ == "__main__":

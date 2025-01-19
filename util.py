@@ -1,6 +1,7 @@
 import rsk
 from typing import Iterable
 import numpy as np
+from typing import TypedDict
 
 
 class Referee:
@@ -41,6 +42,30 @@ def is_inside_rect(point: Iterable[float], bottomleft: Iterable[float], topright
 def is_inside_court(x: np.ndarray) -> bool:
     return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
 
+
+
+class _RobotRefereeType(TypedDict):
+    penalized: bool
+    penalized_reason: str
+    penalized_remaining: int | float
+    preempted: bool
+    preemption_reasons: list[str] | tuple[str]
+
+_RobotsRefereeType = TypedDict('_RobotsRefereeType', {'1': _RobotRefereeType, '2': _RobotRefereeType})
+
+class _TeamRefereeType(TypedDict):
+    name: str
+    robots: _RobotsRefereeType
+
+class _TeamsRefereeType(TypedDict):
+    green: _TeamRefereeType
+    blue: _TeamRefereeType
+
+class RefereeType(TypedDict):
+    game_is_running: bool
+    game_paused: bool
+    halftime_is_running: bool
+    teams: _TeamsRefereeType
 
 if __name__ == "__main__":
     pass

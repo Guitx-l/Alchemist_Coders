@@ -58,7 +58,6 @@ with rsk.Client(host='127.0.0.1', key='1') as client:
 
             preemption_reasons =  refRobot2["preemption_reasons"]
             print(preemption_reasons)
-
         except Exception as e :
             print(e)
 

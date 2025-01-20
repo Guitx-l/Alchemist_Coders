@@ -5,7 +5,7 @@ from math import pi
 color = "blue"
 team = "teams"
 
-if (color = "blue") :
+if (color == "blue") :
     colorennemis = "green"
 else :
     colorennemis = "blue"
@@ -21,9 +21,9 @@ def cages(pBalle):
         Le robot fait 7 cm re rayon réel. Avec une marge, on dira
         qu'il fait 6cm : 30 - 6 = 24
         donc le robot bougera ds l'intervalle y [+0.24 ; -0.24]"""
-    if yCage > 0.24 :
+    if yCage > 0.25 :
         yCage = 0.24
-    elif yCage < -0.24 :
+    elif yCage < -0.25 :
         yCage = -0.24
 
     return(yCage)
@@ -33,7 +33,7 @@ def cages(pBalle):
 
 
 
-with rsk.Client(host='127.0.0.1', key='1') as client:
+with rsk.Client(host='127.0.0.1', key='') as client:
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]
@@ -51,8 +51,13 @@ with rsk.Client(host='127.0.0.1', key='1') as client:
         else :
             x_pos = -1
 
+        arrived = False
     
-    arrived = False
+    except Exception as e :
+        print(e)
+
+    
+    
 
     while True :
         # Position + orientation (x [m], y [m], theta [rad])
@@ -69,12 +74,12 @@ with rsk.Client(host='127.0.0.1', key='1') as client:
         cages(pBalle)
 
         # direction go to
-        dB1 = [-0.2,0,pV1[2] + pi]
+        dB1 = [-0.2,0,pe2[2] + pi]
         dB2 = [pbut,yCage,0]
 
 
-        robot1.goto((dB1), wait=False)
         robot2.goto((dB2), wait=False)
+        robot1.goto((dB1), wait=False)
 
 
         while not arrived :

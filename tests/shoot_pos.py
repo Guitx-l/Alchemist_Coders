@@ -18,17 +18,22 @@ white = pygame.Color('white')
 red = pygame.Color('red')
 goal_pos = np.array((640, 240))
 middle = np.array((320, 240))
+rect_surface = pygame.Surface((20, 20))
+rect_surface.fill(white)
 
 # Game loop.
 while is_open:
     # Update.
-    shoot_pos = attack.get_shoot_pos(middle, np.array(mouse_pos))
+    shoot_pos = attack.get_shoot_pos(np.array(mouse_pos), middle)
+
     pygame.draw.circle(screen, red, middle, 240, width=4)
     pygame.draw.aaline(screen, white, mouse_pos, middle)
     pygame.draw.line(screen, white, middle - (240, 0), middle + (240, 0))
     # Draw.
+    surf = pygame.transform.rotate(rect_surface, -math.degrees(shoot_pos[2]))
+    screen.blit(surf, surf.get_rect(center=middle))
     screen.blit(font.render(f"pos: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
-    screen.blit(font.render(f"angle: {round(shoot_pos[2], 3)}", True, white), (0, 12))
+    screen.blit(font.render(f"angle: {-math.degrees(round(shoot_pos[2], 3))}", True, white), (0, 12))
     pygame.display.flip()
     fpsClock.tick(fps)
 
@@ -41,4 +46,5 @@ while is_open:
 
         if event.type == pygame.MOUSEMOTION:
             mouse_vector = pygame.Vector2(*(event.pos - middle))
-            mouse_pos = mouse_vector.normalize() * 240 + middle
+            try: mouse_pos = mouse_vector.normalize() * 240 + middle
+            except ValueError: mouse_pos = middle

@@ -11,6 +11,7 @@ import util
 from typing import Any, Literal, final
 import datetime
 from colorama import Fore
+import pygame
 from pygame import Vector2
 
 

@@ -10,6 +10,7 @@ import util
 from typing import Literal, final
 import datetime
 from colorama import Fore
+import pygame
 from pygame import Vector2
 import sys
 

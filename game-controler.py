@@ -3,7 +3,7 @@ import time
 
 
 
-with rsk.Client(host='127.0.0.1', key='1') as client:
+with rsk.Client(host='127.0.0.1', key='') as client:
     client.blue1.leds(0, 255, 0)
     client.blue1.leds(0, 255, 0)
     try:
@@ -20,37 +20,37 @@ with rsk.Client(host='127.0.0.1', key='1') as client:
 
         print("Robot 1")
         #client referee robot1
-        penalized =  refRobot1["penalized"]
+        penalized1 =  refRobot1["penalized"]
         print(penalized)
 
-        penalized_reason =  refRobot1["penalized_reason"]
+        penalized_reason1 =  refRobot1["penalized_reason"]
         print(penalized_reason)
 
-        penalized_remaining =  refRobot1["penalized_remaining"]
+        penalized_remaining1 =  refRobot1["penalized_remaining"]
         print(penalized_remaining)
 
-        preempted =  refRobot1["preempted"]
+        preempted1 =  refRobot1["preempted"]
         print(preempted)
 
-        preemption_reasons =  refRobot1["preemption_reasons"]
+        preemption_reasons1 =  refRobot1["preemption_reasons"]
         print(preemption_reasons)
 
 
         #client referee robot 2
         print("Robot 2")
-        penalized =  refRobot2["penalized"]
+        penalized2 =  refRobot2["penalized"]
         print(penalized)
 
-        penalized_reason =  refRobot2["penalized_reason"]
+        penalized_reason2 =  refRobot2["penalized_reason"]
         print(penalized_reason)
 
-        penalized_remaining =  refRobot2["penalized_remaining"]
+        penalized_remaining2 =  refRobot2["penalized_remaining"]
         print(penalized_remaining)
 
-        preempted =  refRobot2["preempted"]
+        preempted2 =  refRobot2["preempted"]
         print(preempted)
 
-        preemption_reasons =  refRobot2["preemption_reasons"]
+        preemption_reasons2 =  refRobot2["preemption_reasons"]
         print(preemption_reasons)
 
      except Exception as e :

@@ -3,7 +3,6 @@ import sys
 import time
 import argparse
 import rsk
-import attack
 import numpy as np
 import math
 import cconstans
@@ -12,6 +11,13 @@ from typing import Literal
 from datetime import datetime
 from colorama import Fore
 from pygame import Vector2
+
+
+def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
+    #finding the shooter pos
+    ball_to_goal_vec = goal_pos - ball_pos
+    shooter_pos: np.ndarray = ball_to_goal_vec * -shooter_offset_scale + goal_pos
+    return (*shooter_pos, math.atan2(*reversed(ball_to_goal_vec)))
 
 
 def log(message: object, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
@@ -32,6 +38,7 @@ class MainClient:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
+        self.last_ball_overlap: float = time.time()
 
     def startup(self):
         log(f"Main startup ({str(time.time()).split('.')[1]})")
@@ -54,8 +61,8 @@ class MainClient:
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, angle), wait=True)
             else:
-                self.shooter.goto(attack.get_shoot_pos(goal_pos, ball, 1.2), wait=True)
-            self.shooter.goto(attack.get_shoot_pos(goal_pos, ball), wait=False)
+                self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.2), wait=True)
+            self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
             self.shooter.kick(1)
         else:
             self.shooter.goto(self.shooter.pose)
@@ -67,6 +74,7 @@ class RotatedClient:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
+        self.last_ball_overlap: float = time.time()
 
     def startup(self):
         log(f"Rotated startup ({str(time.time()).split('.')[1]})")
@@ -75,6 +83,11 @@ class RotatedClient:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
         ball = self.client.ball
+
+        if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
+            if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
+                pass
+
 
         if -cconstans.shooter_offset > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
             goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
@@ -89,8 +102,8 @@ class RotatedClient:
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, -angle), wait=True)
             else:
-                self.shooter.goto(attack.get_shoot_pos(goal_pos, ball, 1.2), wait=True)
-            self.shooter.goto(attack.get_shoot_pos(goal_pos, ball), wait=False)
+                self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.15), wait=True)
+            self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
             self.shooter.kick(1)
             log(f"shooting to {np.around(goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
         else:
@@ -98,11 +111,7 @@ class RotatedClient:
 
 
 def main(args: str | None = None):
-    parser = argparse.ArgumentParser(description="Script that runs the shooter (adapted to halftime change)")
-    parser.add_argument('-r', '--rotated', type=bool, default=False, help="if true, the game will start with the rotated client")
-    parser.add_argument('-t', '--team', type=str, default='blue', help="decides the team of the shooter, either 'blue' or 'green'")
-    parser.add_argument('-v', '--verbose', action='store_true')
-    arguments: argparse.Namespace = parser.parse_args(sys.argv[1::] if args is None else args)
+    arguments: argparse.Namespace = util.get_parser("Script that runs the shooter (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     log(f"args: {arguments}")
     team: str = arguments.team
     rotated: bool = arguments.rotated

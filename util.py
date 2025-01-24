@@ -2,6 +2,7 @@ import rsk
 from typing import Iterable
 import numpy as np
 from typing import TypedDict
+import argparse
 
 
 class Referee:
@@ -48,7 +49,12 @@ def is_inside_rect(point: Iterable[float], bottomleft: Iterable[float], topright
 def is_inside_court(x: np.ndarray) -> bool:
     return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
 
-
+def get_parser(desc: str) -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-r', '--rotated', action='store_true', help="if true, the game will start with the rotated client")
+    parser.add_argument('-t', '--team', type=str, default='blue', help="decides the team of the shooter, either 'blue' or 'green'")
+    parser.add_argument('-v', '--verbose', action='store_true')
+    return parser
 
 class _RobotRefereeType(TypedDict):
     penalized: bool

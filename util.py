@@ -55,7 +55,7 @@ class _RobotRefereeType(TypedDict):
     penalized_reason: str
     penalized_remaining: int | float
     preempted: bool
-    preemption_reasons: list[str] | tuple[str]
+    preemption_reasons: list[str]
 
 _RobotsRefereeType = TypedDict('_RobotsRefereeType', {'1': _RobotRefereeType, '2': _RobotRefereeType})
 
@@ -74,4 +74,4 @@ class RefereeType(TypedDict):
     teams: _TeamsRefereeType
 
 if __name__ == "__main__":
-    pass
+    print({"A":1} | {"A":2})

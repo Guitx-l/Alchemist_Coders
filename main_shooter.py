@@ -1,4 +1,7 @@
 import random
+import sys
+import time
+import argparse
 import rsk
 import attack
 import numpy as np
@@ -11,16 +14,17 @@ from colorama import Fore
 from pygame import Vector2
 
 
-def log(message: object, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info') -> None:
+def log(message: object, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
     date = datetime.now().strftime('%H:%M:%S')
+    kwargs = {"end":"\n"} | kwargs
     if str_type in (0, 'info'):
-        print(f"[{Fore.WHITE}INFO{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}")
+        print(f"[{Fore.WHITE}INFO{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
     elif str_type in (1, 'debug'):
-        print(f"[{Fore.GREEN}DEBUG{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}")
+        print(f"[{Fore.GREEN}DEBUG{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
     elif str_type in (2, 'warn'):
-        print(f"[{Fore.YELLOW}WARNING{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}")
+        print(f"[{Fore.YELLOW}WARNING{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
     elif str_type in (3, 'error'):
-        print(f"[{Fore.RED}ERROR{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}")
+        print(f"[{Fore.RED}ERROR{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
 
 
 class MainClient:
@@ -28,6 +32,9 @@ class MainClient:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
+
+    def startup(self):
+        log(f"Main startup ({str(time.time()).split('.')[1]})")
 
     def update(self) -> None:
         if self.client.ball is None:
@@ -61,6 +68,9 @@ class RotatedClient:
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
 
+    def startup(self):
+        log(f"Rotated startup ({str(time.time()).split('.')[1]})")
+
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
@@ -77,36 +87,47 @@ class RotatedClient:
                     pos = ball + (Vector2(1, 1).normalize() * (cconstans.shooter_offset + .1))
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
-                self.shooter.goto((*pos, angle), wait=True)
+                self.shooter.goto((*pos, -angle), wait=True)
             else:
                 self.shooter.goto(attack.get_shoot_pos(goal_pos, ball, 1.2), wait=True)
             self.shooter.goto(attack.get_shoot_pos(goal_pos, ball), wait=False)
             self.shooter.kick(1)
+            log(f"shooting to {np.around(goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
         else:
             self.shooter.goto(self.shooter.pose)
 
 
-if __name__ == "__main__":
-    with rsk.Client() as c: # tkt c un bordel mais touche pas ca marche nickel
-        team = 'blue'#sys.argv[1]
-        rotated = False#True if sys.argv[2].capitalize() == 'True' else False
-        main = MainClient(c, team) if not rotated else RotatedClient(c, team)
+def main(args: str | None = None):
+    parser = argparse.ArgumentParser(description="Script that runs the shooter (adapted to halftime change)")
+    parser.add_argument('-r', '--rotated', type=bool, default=False, help="if true, the game will start with the rotated client")
+    parser.add_argument('-t', '--team', type=str, default='blue', help="decides the team of the shooter, either 'blue' or 'green'")
+    parser.add_argument('-v', '--verbose', action='store_true')
+    arguments: argparse.Namespace = parser.parse_args(sys.argv[1::] if args is None else args)
+    log(f"args: {arguments}")
+    team: str = arguments.team
+    rotated: bool = arguments.rotated
+
+    with rsk.Client() as c:  # tkt c un bordel mais touche pas ca marche nickel
+        shooter_client = MainClient(c, team) if not rotated else RotatedClient(c, team)
         halftime = True
+        shooter_client.startup()
         while True:
             try:
                 if c.referee['halftime_is_running']:
-                    main = RotatedClient(c, team) if not rotated else MainClient(c, team)
                     if halftime:
+                        shooter_client = RotatedClient(c, team) if not rotated else MainClient(c, team)
+                        log(f"halftime, changing into {shooter_client.__class__}")
                         rotated = not rotated
-                        log(f"halftime, changing into {main.__class__} with team {team}")
                         halftime = False
                 else:
                     halftime = True
-                main.update()
             except KeyboardInterrupt:
                 break
-            except rsk.client.ClientError as e:
-                if main.referee["teams"][main.shooter.color]["robots"][str(main.shooter.number)]["preemption_reasons"]:
-                    continue
-                if e.__repr__()[0] != "#":
-                    log(e, 'info')
+            try:
+                shooter_client.update()
+            except rsk.client.ClientError:
+                continue
+
+
+if __name__ == "__main__":
+    main()

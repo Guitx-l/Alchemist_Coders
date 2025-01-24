@@ -17,7 +17,7 @@ pbut = constants.defense_area_width
 i = 0
 
 
-def attaquant():
+def defenseur():
 
     cages(pBalle)
     dB2 = [pbut,yCage,0]
@@ -141,4 +141,4 @@ with rsk.Client(host='127.0.0.1', key='') as client:
 
             cages(pBalle)
 
-            attaquant()
+            defenseur()

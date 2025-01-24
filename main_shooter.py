@@ -23,15 +23,16 @@ def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_sca
 def log(message: object, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
     date = datetime.now().strftime('%H:%M:%S')
     kwargs = {"end":"\n"} | kwargs
-    if str_type in (0, 'info'):
-        print(f"[{Fore.WHITE}INFO{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
-    elif str_type in (1, 'debug'):
-        print(f"[{Fore.GREEN}DEBUG{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
+    color = Fore.WHITE
+    reset = Fore.RESET
+    type: str = "INFO"
+    if str_type in (1, 'debug'):
+        color = Fore.GREEN; type = "DEBUG"
     elif str_type in (2, 'warn'):
-        print(f"[{Fore.YELLOW}WARNING{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
+        color = Fore.YELLOW; type = "WARNING"
     elif str_type in (3, 'error'):
-        print(f"[{Fore.RED}ERROR{Fore.RESET}] ({Fore.LIGHTBLACK_EX}{date}{Fore.RESET}): {message}", **kwargs)
-
+        color = Fore.RED; type = "ERROR"
+    print(f"[{color}{type}{reset}] [{Fore.CYAN}{__name__}{reset}] ({Fore.LIGHTBLACK_EX}{date}{reset}) - {color}{message}{reset}", **kwargs)
 
 class MainClient:
     def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
@@ -39,6 +40,10 @@ class MainClient:
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
         self.last_ball_overlap: float = time.time()
+        self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+
+    def on_pause(self) -> None:
+        self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
 
     def startup(self):
         log(f"Main startup ({str(time.time()).split('.')[1]})")
@@ -47,6 +52,12 @@ class MainClient:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
         ball = self.client.ball
+
+        if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
+            if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
+                pass
+        else:
+            self.last_ball_overlap = time.time()
 
         if cconstans.shooter_offset < ball[0] < rsk.constants.field_length/2 - rsk.constants.defense_area_length and util.is_inside_court(ball):
             goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
@@ -76,8 +87,12 @@ class RotatedClient:
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: util.RefereeType = self.client.referee
         self.last_ball_overlap: float = time.time()
+        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
 
-    def startup(self):
+    def on_pause(self) -> None:
+        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+
+    def startup(self) -> None:
         log(f"Rotated startup ({str(time.time()).split('.')[1]})")
 
     def update(self) -> None:
@@ -88,10 +103,10 @@ class RotatedClient:
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 pass
-
+        else:
+            self.last_ball_overlap = time.time()
 
         if -cconstans.shooter_offset > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
-            goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
             if ball[0] > self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
@@ -102,11 +117,14 @@ class RotatedClient:
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, -angle), wait=True)
+                log("ball behind", 'debug')
             else:
-                self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.15), wait=True)
-            self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
-            self.shooter.kick(1)
-            log(f"shooting to {np.around(goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
+                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.15), wait=True)
+                log("moving straight to ball", 'debug')
+            self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
+            if util.is_inside_circle(self.shooter.position, ball, .15):
+                self.shooter.kick(1)
+                log(f"shooting to {np.around(self.goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
         else:
             self.shooter.goto(self.shooter.pose)
 
@@ -120,6 +138,7 @@ def main(args: str | None = None):
     with rsk.Client() as c:  # tkt c un bordel mais touche pas ca marche nickel
         shooter_client = MainClient(c, team) if not rotated else RotatedClient(c, team)
         halftime = True
+        pause = True
         shooter_client.startup()
         while True:
             try:
@@ -131,6 +150,13 @@ def main(args: str | None = None):
                         halftime = False
                 else:
                     halftime = True
+                if c.referee["game_paused"]:
+                    if pause:
+                        shooter_client.on_pause()
+                        log(f"running {shooter_client.__class__}.{shooter_client.on_pause.__name__}...")
+                        pause = False
+                else:
+                    pause = True
             except KeyboardInterrupt:
                 break
             try:

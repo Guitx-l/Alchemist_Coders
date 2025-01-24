@@ -11,7 +11,6 @@ import util
 from typing import Any, Literal, final
 import datetime
 from colorama import Fore
-import pygame
 from pygame import Vector2
 
 
@@ -43,6 +42,10 @@ class IClient(abc.ABC):
 
     def can_play(self, robot: rsk.client.ClientRobot) -> bool:
         return (not self.is_preempted(robot)) and (not self.is_penalized(robot))
+    
+    def goto(self, pos, wait=True):
+        if self.can_play(self.shooter):
+            self.shooter.goto(pos, wait)
 
     @abc.abstractmethod
     def startup(self) -> None: ...
@@ -53,8 +56,6 @@ class IClient(abc.ABC):
 class Main(IClient):
     def startup(self) -> None:
         log(f"STARTUP ({str(time.time()).split('.')[1]})")
-        if not self.can_play(self.shooter):
-            self.shooter.goto((-0.15, 0, 0))
 
     def update(self) -> None:
         ball = self.client.ball.copy() if self.client.ball is not None else np.array([0, 0])
@@ -69,13 +70,13 @@ class Main(IClient):
                     pos = ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1))
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
-                self.shooter.goto((*pos, angle))
+                self.goto((*pos, angle))
             else:
-                self.shooter.goto(attack.get_shoot_pos(cconstans.goal_pos, ball, 1.2), wait=True)
-            self.shooter.goto(attack.get_shoot_pos(cconstans.goal_pos, ball), wait=False)
+                self.goto(attack.get_shoot_pos(cconstans.goal_pos, ball, 1.2), wait=True)
+            self.goto(attack.get_shoot_pos(cconstans.goal_pos, ball), wait=False)
             self.shooter.kick(1)
-        else:
-            self.shooter.goto(self.shooter.pose)
+        elif self.can_play(self.shooter):
+            self.goto(self.shooter.pose)
 
 class RotatedClient(IClient):
     def startup(self) -> None:

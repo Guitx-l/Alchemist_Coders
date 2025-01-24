@@ -12,7 +12,7 @@ from rsk import constants
 from math import pi
 import time
 
-color = "blue"
+color = "green"
 team = "teams"
 
 if (color == "blue") :
@@ -30,7 +30,7 @@ def defenseur():
 
     try:
         cages(pBalle)
-        dB2 = [pbut,yCage,0]
+        dB2 = [pbut,yCage,0 if x_pos == 1 else pi]
 
 
             
@@ -51,7 +51,7 @@ def defenseur():
                 #print(f"pBalle {round(pBalle[0],2), round(pBalle[1],2)} ;\n")
                 arrived = True
     except rsk.client.ClientError as e:
-        print(f"eror: {e}")
+        pass
 
 
 

@@ -63,7 +63,8 @@ class MainClient:
             else:
                 self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.2), wait=True)
             self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
-            self.shooter.kick(1)
+            if util.is_inside_circle(self.shooter.position, ball, .15):
+                self.shooter.kick(1)
         else:
             self.shooter.goto(self.shooter.pose)
 
@@ -111,7 +112,7 @@ class RotatedClient:
 
 
 def main(args: str | None = None):
-    arguments: argparse.Namespace = util.get_parser("Script that runs the shooter (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
+    arguments = util.get_parser("Script that runs the shooter (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     log(f"args: {arguments}")
     team: str = arguments.team
     rotated: bool = arguments.rotated

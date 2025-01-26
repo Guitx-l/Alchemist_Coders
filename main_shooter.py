@@ -1,5 +1,6 @@
 import random
 import sys
+import abc
 import time
 import rsk
 import numpy as np
@@ -16,21 +17,29 @@ def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_sca
     shooter_pos: np.ndarray = ball_to_goal_vec * -shooter_offset_scale + goal_pos
     return (shooter_pos[0], shooter_pos[1], math.atan2(*reversed(ball_to_goal_vec)))
 
-class MainClient:
+
+class IClient(abc.ABC):
     def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: dict = self.client.referee
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-        self.logger = util.Logger(__name__, True)
+        self.logger = util.Logger(self.__class__.__name__, True)
 
     def on_pause(self) -> None:
+        self.logger.info(f"running {self.__class__}.on_pause...")
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.logger.info(f"goal pos: {round(self.goal_pos[1], 3)}")
 
-    def startup(self):
-        self.logger.info(f"Main startup ({str(time.time()).split('.')[1]})")
+    def startup(self) -> None:
+        self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
 
+    @abc.abstractmethod
+    def update(self) -> None: ...
+
+
+class MainClient(IClient):
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
@@ -39,17 +48,17 @@ class MainClient:
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 pos = Vector2(*(self.shooter.position - ball)).normalize() * (rsk.constants.timed_circle_radius + 0.05)
-
+                self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
                 if not util.is_inside_court(pos):
                     pos = Vector2(clamp())
                 else:
-                    self.logger.debug(f"{pos} in court")
-                    self.shooter.goto((pos.x, pos.y,  self.shooter.orientation), wait=False)
+                    #self.logger.debug(f"{pos} in court")
+                    self.shooter.goto((pos.x, pos.y,  self.shooter.orientation), wait=True)
         else:
             self.last_ball_overlap = time.time()
 
-        if cconstans.shooter_offset < ball[0] < rsk.constants.field_length/2 - rsk.constants.defense_area_length and util.is_inside_court(ball):
-            goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        if 0.1 <= ball[0] < rsk.constants.field_length/2 - rsk.constants.defense_area_length and util.is_inside_court(ball):
+            # si la balle est derrire le shooter:
             if ball[0] < self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
@@ -60,35 +69,22 @@ class MainClient:
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, angle), wait=True)
-                self.logger.debug("back goto")
-            else:
-                self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.2), wait=True)
-                self.logger.debug(f"front goto")
-            self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
-            self.logger.debug(f"base goto ({np.around(get_shoot_pos(goal_pos, ball * 1.5), 3)})")
-            self.shooter.kick(1)
-            self.logger.debug("kicking")
-            self.logger.debug(np.around(ball, 3))
+            
+            # sinon si l'angle entre la balle et le robot est trop grand
+            elif abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 45:
+                self.logger.debug(f"shooter not straight: {abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position))))}")
+                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
+
+            self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
+            if util.is_inside_circle(self.shooter.position, ball, 0.12):
+                self.shooter.kick(1)
+                self.logger.debug(f"kicking")
         else:
             self.shooter.goto(self.shooter.pose)
 
 
 
-class RotatedClient:
-    def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
-        self.client = client
-        self.shooter: rsk.client.ClientRobot = client.robots[team][1]
-        self.referee: dict = self.client.referee
-        self.last_ball_overlap: float = time.time()
-        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-        self.logger = util.Logger(__name__, True)
-
-    def on_pause(self) -> None:
-        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-
-    def startup(self) -> None:
-        self.logger.info(f"Rotated startup ({str(time.time()).split('.')[1]})")
-
+class RotatedClient(IClient):
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
@@ -116,11 +112,13 @@ class RotatedClient:
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.15), wait=True)
                 logger.debug("moving straight to ball")
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
-            if util.is_inside_circle(self.shooter.position, ball, .15):
+            if util.is_inside_circle(self.shooter.position, ball, .25):
                 self.shooter.kick(1)
                 logger.info(f"shooting to {np.around(self.goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
         else:
             self.shooter.goto(self.shooter.pose)
+        self.logger.error("WAF WAF WAF")
+
 
 
 def main(args: list[str] | None = None):
@@ -146,7 +144,6 @@ def main(args: list[str] | None = None):
             if c.referee["game_paused"]:
                 if pause:
                     shooter_client.on_pause()
-                    logger.info(f"running {shooter_client.__class__}.{shooter_client.on_pause.__name__}...")
                     pause = False
             else:
                 pause = True

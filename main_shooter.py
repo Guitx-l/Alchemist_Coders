@@ -1,52 +1,35 @@
 import random
 import sys
 import time
-import argparse
 import rsk
 import numpy as np
 import math
 import cconstans
 import util
-from typing import Literal
-from datetime import datetime
-from colorama import Fore
 from pygame import Vector2
-
+from pygame.math import clamp
+logger = util.Logger(__name__, True)
 
 def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     #finding the shooter pos
     ball_to_goal_vec = goal_pos - ball_pos
     shooter_pos: np.ndarray = ball_to_goal_vec * -shooter_offset_scale + goal_pos
-    return (*shooter_pos, math.atan2(*reversed(ball_to_goal_vec)))
-
-
-def log(message: object, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
-    date = datetime.now().strftime('%H:%M:%S')
-    kwargs = {"end":"\n"} | kwargs
-    color = Fore.WHITE
-    reset = Fore.RESET
-    type: str = "INFO"
-    if str_type in (1, 'debug'):
-        color = Fore.GREEN; type = "DEBUG"
-    elif str_type in (2, 'warn'):
-        color = Fore.YELLOW; type = "WARNING"
-    elif str_type in (3, 'error'):
-        color = Fore.RED; type = "ERROR"
-    print(f"[{color}{type}{reset}] [{Fore.CYAN}{__name__}{reset}] ({Fore.LIGHTBLACK_EX}{date}{reset}) - {color}{message}{reset}", **kwargs)
+    return (shooter_pos[0], shooter_pos[1], math.atan2(*reversed(ball_to_goal_vec)))
 
 class MainClient:
     def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
-        self.referee: util.RefereeType = self.client.referee
+        self.referee: dict = self.client.referee
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.logger = util.Logger(__name__, True)
 
     def on_pause(self) -> None:
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
 
     def startup(self):
-        log(f"Main startup ({str(time.time()).split('.')[1]})")
+        self.logger.info(f"Main startup ({str(time.time()).split('.')[1]})")
 
     def update(self) -> None:
         if self.client.ball is None:
@@ -55,7 +38,13 @@ class MainClient:
 
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
-                pass
+                pos = Vector2(*(self.shooter.position - ball)).normalize() * (rsk.constants.timed_circle_radius + 0.05)
+
+                if not util.is_inside_court(pos):
+                    pos = Vector2(clamp())
+                else:
+                    self.logger.debug(f"{pos} in court")
+                    self.shooter.goto((pos.x, pos.y,  self.shooter.orientation), wait=False)
         else:
             self.last_ball_overlap = time.time()
 
@@ -71,11 +60,15 @@ class MainClient:
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, angle), wait=True)
+                self.logger.debug("back goto")
             else:
                 self.shooter.goto(get_shoot_pos(goal_pos, ball, 1.2), wait=True)
+                self.logger.debug(f"front goto")
             self.shooter.goto(get_shoot_pos(goal_pos, ball), wait=False)
-            if util.is_inside_circle(self.shooter.position, ball, .15):
-                self.shooter.kick(1)
+            self.logger.debug(f"base goto ({np.around(get_shoot_pos(goal_pos, ball * 1.5), 3)})")
+            self.shooter.kick(1)
+            self.logger.debug("kicking")
+            self.logger.debug(np.around(ball, 3))
         else:
             self.shooter.goto(self.shooter.pose)
 
@@ -85,15 +78,16 @@ class RotatedClient:
     def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
-        self.referee: util.RefereeType = self.client.referee
+        self.referee: dict = self.client.referee
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.logger = util.Logger(__name__, True)
 
     def on_pause(self) -> None:
         self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
 
     def startup(self) -> None:
-        log(f"Rotated startup ({str(time.time()).split('.')[1]})")
+        self.logger.info(f"Rotated startup ({str(time.time()).split('.')[1]})")
 
     def update(self) -> None:
         if self.client.ball is None:
@@ -117,21 +111,21 @@ class RotatedClient:
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, -angle), wait=True)
-                log("ball behind", 'debug')
+                logger.debug("ball behind")
             else:
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.15), wait=True)
-                log("moving straight to ball", 'debug')
+                logger.debug("moving straight to ball")
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
             if util.is_inside_circle(self.shooter.position, ball, .15):
                 self.shooter.kick(1)
-                log(f"shooting to {np.around(self.goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
+                logger.info(f"shooting to {np.around(self.goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
         else:
             self.shooter.goto(self.shooter.pose)
 
 
-def main(args: str | None = None):
+def main(args: list[str] | None = None):
     arguments = util.get_parser("Script that runs the shooter (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
-    log(f"args: {arguments}")
+    logger.info(f"args: {arguments}")
     team: str = arguments.team
     rotated: bool = arguments.rotated
 
@@ -141,28 +135,27 @@ def main(args: str | None = None):
         pause = True
         shooter_client.startup()
         while True:
-            try:
-                if c.referee['halftime_is_running']:
-                    if halftime:
-                        shooter_client = RotatedClient(c, team) if not rotated else MainClient(c, team)
-                        log(f"halftime, changing into {shooter_client.__class__}")
-                        rotated = not rotated
-                        halftime = False
-                else:
-                    halftime = True
-                if c.referee["game_paused"]:
-                    if pause:
-                        shooter_client.on_pause()
-                        log(f"running {shooter_client.__class__}.{shooter_client.on_pause.__name__}...")
-                        pause = False
-                else:
-                    pause = True
-            except KeyboardInterrupt:
-                break
+            if c.referee['halftime_is_running']:
+                if halftime:
+                    shooter_client = RotatedClient(c, team) if not rotated else MainClient(c, team)
+                    logger.info(f"halftime, changing into {shooter_client.__class__}")
+                    rotated = not rotated
+                    halftime = False
+            else:
+                halftime = True
+            if c.referee["game_paused"]:
+                if pause:
+                    shooter_client.on_pause()
+                    logger.info(f"running {shooter_client.__class__}.{shooter_client.on_pause.__name__}...")
+                    pause = False
+            else:
+                pause = True
+
             try:
                 shooter_client.update()
-            except rsk.client.ClientError:
-                continue
+            except rsk.client.ClientError as e:
+                if not arguments.quiet:
+                    shooter_client.logger.warn(e)
 
 
 if __name__ == "__main__":

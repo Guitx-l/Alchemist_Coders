@@ -28,9 +28,8 @@ class IClient(abc.ABC):
         self.logger = util.Logger(self.__class__.__name__, True)
 
     def on_pause(self) -> None:
-        self.logger.info(f"running {self.__class__}.on_pause...")
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-        self.logger.info(f"goal pos: {round(self.goal_pos[1], 3)}")
+        self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {round(self.goal_pos[1], 3)}")
 
     def startup(self) -> None:
         self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
@@ -47,13 +46,8 @@ class MainClient(IClient):
 
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
-                pos = Vector2(*(self.shooter.position - ball)).normalize() * (rsk.constants.timed_circle_radius + 0.05)
+                pos = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
-                if not util.is_inside_court(pos):
-                    pos = Vector2(clamp())
-                else:
-                    #self.logger.debug(f"{pos} in court")
-                    self.shooter.goto((pos.x, pos.y,  self.shooter.orientation), wait=True)
         else:
             self.last_ball_overlap = time.time()
 
@@ -71,7 +65,7 @@ class MainClient(IClient):
                 self.shooter.goto((*pos, angle), wait=True)
             
             # sinon si l'angle entre la balle et le robot est trop grand
-            elif abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 45:
+            elif abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 35:
                 self.logger.debug(f"shooter not straight: {abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position))))}")
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
 
@@ -85,6 +79,14 @@ class MainClient(IClient):
 
 
 class RotatedClient(IClient):
+    def on_pause(self) -> None:
+        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {round(self.goal_pos[1], 3)}")
+
+    def startup(self) -> None:
+        super().startup()
+        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
@@ -92,11 +94,13 @@ class RotatedClient(IClient):
 
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
-                pass
+                pos = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
+                self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
         else:
             self.last_ball_overlap = time.time()
 
-        if -cconstans.shooter_offset > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
+        if -0.1 > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
+            # si la balle est derrire le shooter:
             if ball[0] > self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
@@ -108,16 +112,16 @@ class RotatedClient(IClient):
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, -angle), wait=True)
                 logger.debug("ball behind")
-            else:
-                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.15), wait=True)
-                logger.debug("moving straight to ball")
+                # sinon si l'angle entre la balle et le robot est trop grand
+            elif -abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 35:
+                self.logger.debug(f"shooter not straight: {abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position))))}")
+                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
-            if util.is_inside_circle(self.shooter.position, ball, .25):
+            if util.is_inside_circle(self.shooter.position, ball, 0.12):
                 self.shooter.kick(1)
-                logger.info(f"shooting to {np.around(self.goal_pos, 2)} from {np.around(self.shooter.pose, 2)}")
+                logger.info(f"kicking")
         else:
             self.shooter.goto(self.shooter.pose)
-        self.logger.error("WAF WAF WAF")
 
 
 

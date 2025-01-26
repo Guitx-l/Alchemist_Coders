@@ -33,7 +33,7 @@ while is_open:
     surf = pygame.transform.rotate(rect_surface, -math.degrees(shoot_pos[2]))
     screen.blit(surf, surf.get_rect(center=middle))
     screen.blit(font.render(f"pos: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
-    screen.blit(font.render(f"dot: {-math.degrees(round(shoot_pos[2], 3))}", True, white), (0, 12))
+    screen.blit(font.render(f"dot: {shoot_pos[0:2] - middle}", True, white), (0, 12))
     pygame.display.flip()
     fpsClock.tick(fps)
 

@@ -34,6 +34,9 @@ class IClient(abc.ABC):
     def startup(self) -> None:
         self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
 
+    def get_shooter_angle(self) -> float:
+        return math.degrees(math.atan2(*reversed(self.shooter.position)))
+
     @abc.abstractmethod
     def update(self) -> None: ...
 
@@ -46,8 +49,9 @@ class MainClient(IClient):
 
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
-                pos = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
-                self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
+                self.logger.debug('BOUGE LAAAAAAAAAA')
+                pos: Vector2 = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
+                #self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
         else:
             self.last_ball_overlap = time.time()
 
@@ -65,8 +69,7 @@ class MainClient(IClient):
                 self.shooter.goto((*pos, angle), wait=True)
             
             # sinon si l'angle entre la balle et le robot est trop grand
-            elif abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 35:
-                self.logger.debug(f"shooter not straight: {abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position))))}")
+            elif abs(self.get_shooter_angle()) > 25:
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
 
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)

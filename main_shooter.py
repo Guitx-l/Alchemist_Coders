@@ -56,7 +56,7 @@ class MainClient(IClient):
             self.last_ball_overlap = time.time()
 
         if 0.1 <= ball[0] < rsk.constants.field_length/2 - rsk.constants.defense_area_length and util.is_inside_court(ball):
-            # si la balle est derrire le shooter:
+            # si la balle est derriere le shooter:
             if ball[0] < self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
@@ -67,7 +67,8 @@ class MainClient(IClient):
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, angle), wait=True)
-            
+
+            # TODO: check if the shooter is almost aligned with the ball and the goal (be it by angle or by a straight line)
             # sinon si l'angle entre la balle et le robot est trop grand
             elif abs(self.get_shooter_angle()) > 25:
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
@@ -83,8 +84,8 @@ class MainClient(IClient):
 
 class RotatedClient(IClient):
     def on_pause(self) -> None:
+        super().on_pause()
         self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-        self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {round(self.goal_pos[1], 3)}")
 
     def startup(self) -> None:
         super().startup()
@@ -98,12 +99,13 @@ class RotatedClient(IClient):
         if util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 pos = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
-                self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
+                #self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
         else:
             self.last_ball_overlap = time.time()
 
+        # if the ball is in the right place
         if -0.1 > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
-            # si la balle est derrire le shooter:
+            # si la balle est derriere le shooter:
             if ball[0] > self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
@@ -114,11 +116,15 @@ class RotatedClient(IClient):
                 elif -35 < math.degrees(angle) < 0:
                     pos = ball + (Vector2(1, -1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, -angle), wait=True)
-                logger.debug("ball behind")
-                # sinon si l'angle entre la balle et le robot est trop grand
-            elif -abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position)))) > 35:
-                self.logger.debug(f"shooter not straight: {abs(math.degrees(math.atan2(*reversed(ball - self.shooter.position))))}")
+
+            # TODO: check if the shooter is almost aligned with the ball and the goal (be it by angle or by a straight line)
+            # brouillon:
+            # si angle(goal_pos, ball) ~= angle(goal_pos, shooter): ...
+            # sinon si l'angle du shooter est trop grand
+            elif (180 - abs(self.get_shooter_angle()) > 25) and (not util.is_inside_circle(self.shooter.position, ball, 0.15)):
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
+                self.logger.debug("angle too big")
+
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
             if util.is_inside_circle(self.shooter.position, ball, 0.12):
                 self.shooter.kick(1)

@@ -5,14 +5,14 @@ from math import pi
 import time
 import main_shooter
 
-threading.Thread(target=lambda *_: main_shooter.main("-t green".split(" "))).start()
+#threading.Thread(target=lambda *_: main_shooter.main("-t green -q --host rsk.simulateur.les-amicales.fr -k 01234".split(" "))).start()
 
 import rsk
 from rsk import constants
 from math import pi
 import time
 
-color = "green"
+color = "blue"
 team = "teams"
 
 if (color == "blue") :
@@ -46,7 +46,7 @@ def cages(pBalle):
     else :
         dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
 
- 
+    #dB2[0] = dB2[0] * (-1)
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi
@@ -99,7 +99,7 @@ def defenseur():
 
 
 
-with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
+with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]

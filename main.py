@@ -46,7 +46,7 @@ def cages(pBalle):
     else :
         dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
 
-    dB2[0] = dB2[0] * (-1)
+    #dB2[0] = dB2[0] * (-1)
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi
@@ -54,7 +54,7 @@ def cages(pBalle):
 
 """faire que le robot se déplace en fonction de l'orientation du robot attaquant"""
     
-
+"""creer 2 programes en fonction de si xpos est à 1 ou -1"""
 
 
 

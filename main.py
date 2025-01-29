@@ -46,7 +46,7 @@ def cages(pBalle):
     else :
         dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
 
-    #dB2[0] = dB2[0] * (-1)
+    dB2[0] = dB2[0] * (-1)
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi

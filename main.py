@@ -5,7 +5,7 @@ from math import pi
 import time
 import main_shooter
 
-threading.Thread(target=lambda *_: main_shooter.main("-t green -r".split(" "))).start()
+threading.Thread(target=lambda *_: main_shooter.main("-t green".split(" "))).start()
 
 import rsk
 from rsk import constants

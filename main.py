@@ -5,7 +5,7 @@ from math import pi
 import time
 import main_shooter
 
-threading.Thread(target=lambda *_: (print("main shooter start"), main_shooter.main("-t green -r".split(" ")))).start()
+threading.Thread(target=lambda *_: main_shooter.main("-t green".split(" "))).start()
 
 import rsk
 from rsk import constants
@@ -62,14 +62,20 @@ def defenseur():
 
     try:
         dB2 =  cages(pBalle)
-        print(dB2)
+        #print(dB2)
         
         if(not refRobot2["penalized"] and not refRobot2["preempted"]) :
             #print("if rbt2 fonctionne")
             robot2.goto((dB2), wait=False)
             arrived = False
+            if x_pos == -1:
+                if pBalle[0] > constants.field_length/2 - constants.defense_area_length:
+                    robot2.kick()
+            else:
+                if pBalle[0] < -constants.field_length/2 + rsk.constants.defense_area_length:
+                    robot2.kick()
         else :
-            print(refRobot1["penalized"], " and ", refRobot1["preempted"])
+            print(refRobot1["penalized"], " and ", refRobot1["preemption_reasons"])
         arrived = False
 
 
@@ -125,7 +131,7 @@ with rsk.Client(host='127.0.0.1', key='') as client:
             time.sleep(0.1)
             print("game isn't running")
         if(ref["game_is_running"]):
-                   
+
 
 
             while True :
@@ -139,7 +145,7 @@ with rsk.Client(host='127.0.0.1', key='') as client:
                     pe2 = robotennemis2.pose
                     pBalle = client.ball
                     # postition que le défenceur doit prendre pour se positionner au niveaux des cages
-                    # ATTENTION pbut = - constants.defense_area_width car constants.defense_area_width 
+                    # ATTENTION pbut = - constants.defense_area_width car constants.defense_area_width
                     pbut = - constants.defense_area_width * x_pos
 
                 except Exception as e :

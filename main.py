@@ -12,7 +12,7 @@ from rsk import constants
 from math import pi
 import time
 
-color = "green"
+color = "blue"
 team = "teams"
 
 if (color == "blue") :
@@ -20,7 +20,7 @@ if (color == "blue") :
 else :
     colorennemis = "blue"
 
-pbut = constants.defense_area_width * -x_pos
+pbut = constants.defense_area_width
 
 
 i = 0
@@ -40,15 +40,13 @@ def cages(pBalle):
     elif yCage < -0.25 :
         yCage = -0.24
 
-    if (-0.2<robot2.pose[0] - pBalle[0] < 0.2) :
+    if (-0.3<robot2.pose[0] - pBalle[0] < 0.3) :
         # goto shoot ball
         dB2 = [(pBalle[0] - 0.1) * -x_pos,pBalle[1],0 if x_pos == 1 else pi]
     else :
-        dB2 = [pbut,yCage,0 if x_pos == 1 else pi]
+        dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
 
-    if (0.3 < pbut - dB2[0] < 0.3):
-        dB2[0] = pbut
-
+    #dB2[0] = dB2[0] * (-1)
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi
@@ -101,7 +99,7 @@ def defenseur():
 
 
 
-with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
+with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]

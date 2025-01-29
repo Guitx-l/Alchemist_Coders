@@ -56,6 +56,8 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-r', '--rotated', action='store_true', help="the game will start with the rotated client if specified")
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
+    parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client")
+    parser.add_argument('-k', '--key', type=str, default="", help="key of the client")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='store_true')
     group.add_argument('-q', '--quiet', action='store_true')

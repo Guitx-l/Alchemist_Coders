@@ -128,14 +128,17 @@ with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
             print("game isn't running")
         if(ref["game_is_running"]):
 
-            x_positive = client.referee[team][color]["x_positive"]
             
-            if (x_positive == True) :
-                x_pos = -1
-            else :
-                x_pos = 1
 
             while True :
+
+                x_positive = client.referee[team][color]["x_positive"]
+            
+                if (x_positive == True) :
+                    x_pos = -1
+                else :
+                    x_pos = 1
+
 
                 try:
                     # Position + orientation (x [m], y [m], theta [rad])

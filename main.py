@@ -110,11 +110,7 @@ with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
         refRobot2 = client.referee[team][color]["robots"]['2']
         """Il suffira de multiplier les x des robot et le l'emplacement des cages
         par x_pos pour obenir la position souhaité en fonction du coté de notre camp"""
-        x_positive = client.referee[team][color]["x_positive"]
-        if (x_positive == True) :
-            x_pos = -1
-        else :
-            x_pos = 1
+        
 
         robot1.pose
     
@@ -132,7 +128,12 @@ with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
             print("game isn't running")
         if(ref["game_is_running"]):
 
-
+            x_positive = client.referee[team][color]["x_positive"]
+            
+            if (x_positive == True) :
+                x_pos = -1
+            else :
+                x_pos = 1
 
             while True :
 

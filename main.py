@@ -5,7 +5,7 @@ from math import pi
 import time
 import main_shooter
 
-threading.Thread(target=lambda *_: main_shooter.main("-t green".split(" "))).start()
+#threading.Thread(target=lambda *_: main_shooter.main("-t green -q --host rsk.simulateur.les-amicales.fr -k 01234".split(" "))).start()
 
 import rsk
 from rsk import constants
@@ -20,7 +20,7 @@ if (color == "blue") :
 else :
     colorennemis = "blue"
 
-pbut = constants.defense_area_width
+pbut = constants.defense_area_width * -x_pos
 
 
 i = 0
@@ -40,13 +40,15 @@ def cages(pBalle):
     elif yCage < -0.25 :
         yCage = -0.24
 
-    if (-0.3<robot2.pose[0] - pBalle[0] < 0.3) :
+    if (-0.2<robot2.pose[0] - pBalle[0] < 0.2) :
         # goto shoot ball
         dB2 = [(pBalle[0] - 0.1) * -x_pos,pBalle[1],0 if x_pos == 1 else pi]
     else :
-        dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
+        dB2 = [pbut,yCage,0 if x_pos == 1 else pi]
 
- 
+    if (0.3 < pbut - dB2[0] < 0.3):
+        dB2[0] = pbut
+
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi

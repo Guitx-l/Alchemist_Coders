@@ -140,7 +140,7 @@ def main(args: list[str] | None = None):
     team: str = arguments.team
     rotated: bool = arguments.rotated
 
-    with rsk.Client() as c:  # tkt c un bordel mais touche pas ca marche nickel
+    with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as c:  # tkt c un bordel mais touche pas ca marche nickel
         shooter_client = MainClient(c, team) if not rotated else RotatedClient(c, team)
         halftime = True
         pause = True

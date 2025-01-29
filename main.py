@@ -5,7 +5,7 @@ from math import pi
 import time
 import main_shooter
 
-threading.Thread(target=lambda *_: main_shooter.main("-t green".split(" "))).start()
+threading.Thread(target=lambda *_: main_shooter.main("-t green -r".split(" "))).start()
 
 import rsk
 from rsk import constants
@@ -99,7 +99,7 @@ def defenseur():
 
 
 
-with rsk.Client(host='127.0.0.1', key='') as client:
+with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]

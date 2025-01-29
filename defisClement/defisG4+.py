@@ -49,7 +49,7 @@ def attaquantEnnemis(pBalle,pe1,pe2):
     2 = robot2 dang.
     3 = robot1 et robot2 dang.
     4 = en transaction : si rb1 étais dang., alors rb2 est dang. et vice-versa"""
-    return(danger)
+    #return(danger)
 
 
 
@@ -110,7 +110,7 @@ with rsk.Client() as client:
 
 
 
-         """afin determiner contre quel robot le goal doit se défendre,
+        """afin determiner contre quel robot le goal doit se défendre,
         il est nécéssaire de definir une fonction pour déterminer quel robot est le plus à même de marque un but.
         
         Si sur l'ordre des x, un robot se trouve devant la balle il n'est pas dangereux, sauf s'il se rapproche trop vite ou est à une distance trop courte

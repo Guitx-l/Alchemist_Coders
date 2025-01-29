@@ -107,7 +107,7 @@ class RotatedClient(IClient):
             self.last_ball_overlap = time.time()
 
         # if the ball is in the right place
-        if -0.1 > ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
+        if ball[0] > -rsk.constants.field_length/2 + rsk.constants.defense_area_length and util.is_inside_court(ball):
             # si la balle est derriere le shooter:
             if ball[0] > self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))

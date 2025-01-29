@@ -42,15 +42,18 @@ def cages(pBalle):
 
     if (-0.3<robot2.pose[0] - pBalle[0] < 0.3) :
         # goto shoot ball
-        dB2 = [(pBalle[0] - 0.1) * x_pos,pBalle[1],0 if x_pos == 1 else pi]
+        dB2 = [(pBalle[0] - 0.1) * -x_pos,pBalle[1],0 if x_pos == 1 else pi]
     else :
-        dB2 = [pbut * x_pos,yCage,0 if x_pos == 1 else pi]
+        dB2 = [pbut * -x_pos,yCage,0 if x_pos == 1 else pi]
 
+ 
 
     if (dB2[2] > pi):
         dB2[2] = dB2[2] - pi
     return(dB2)
 
+"""faire que le robot se déplace en fonction de l'orientation du robot attaquant"""
+    
 
 
 
@@ -96,7 +99,7 @@ def defenseur():
 
 
 
-with rsk.Client(host='127.0.0.1', key='') as client:
+with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='01234') as client:
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]
@@ -107,11 +110,7 @@ with rsk.Client(host='127.0.0.1', key='') as client:
         refRobot2 = client.referee[team][color]["robots"]['2']
         """Il suffira de multiplier les x des robot et le l'emplacement des cages
         par x_pos pour obenir la position souhaité en fonction du coté de notre camp"""
-        x_positive = client.referee[team][color]["x_positive"]
-        if (x_positive == True) :
-            x_pos = -1
-        else :
-            x_pos = 1
+        
 
         robot1.pose
     
@@ -129,9 +128,17 @@ with rsk.Client(host='127.0.0.1', key='') as client:
             print("game isn't running")
         if(ref["game_is_running"]):
 
-
+            
 
             while True :
+
+                x_positive = client.referee[team][color]["x_positive"]
+            
+                if (x_positive == True) :
+                    x_pos = -1
+                else :
+                    x_pos = 1
+
 
                 try:
                     # Position + orientation (x [m], y [m], theta [rad])

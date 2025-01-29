@@ -52,7 +52,7 @@ def cages(pBalle):
         dB2[2] = dB2[2] - pi
     return(dB2)
 
-
+"""faire que le robot se déplace en fonction de l'orientation du robot attaquant"""
     
 
 

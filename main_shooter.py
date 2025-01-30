@@ -34,7 +34,10 @@ class IClient(abc.ABC):
     def startup(self) -> None:
         self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
 
-    def get_shooter_angle(self) -> float:
+    def get_goal_angle(self, pos: np.ndarray[np.float64]) -> float:
+        return math.atan2(*reversed(self.goal_pos - pos))
+
+    def get_shooter_angle(self):
         return math.degrees(math.atan2(*reversed(self.shooter.position)))
 
     @abc.abstractmethod
@@ -57,6 +60,7 @@ class MainClient(IClient):
             self.last_ball_overlap = time.time()
 
         if util.is_inside_court(ball):
+            self.logger.debug(f"ball angle: {round(math.degrees(self.get_goal_angle(ball))), round(math.degrees(self.get_goal_angle(self.shooter.position))), round(math.degrees(self.get_goal_angle(ball) - abs(self.get_goal_angle(self.shooter.position))))}")
             # si la balle est derriere le shooter:
             if ball[0] < self.shooter.position[0]:
                 ball_vector = Vector2(*(self.shooter.position - ball))
@@ -71,11 +75,13 @@ class MainClient(IClient):
 
             # TODO: check if the shooter is almost aligned with the ball and the goal (be it by angle or by a straight line)
             # sinon si l'angle entre la balle et le robot est trop grand
+            """
             elif (abs(self.get_shooter_angle()) > 25) and (not util.is_inside_circle(self.shooter.position, ball, 0.2)):
                 self.logger.debug("jsp tu sais")
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=True)
+            """
 
-            self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
+            #self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
             if util.is_inside_circle(self.shooter.position, ball, 0.12):
                 self.shooter.kick(1)
                 self.logger.debug(f"kicking")

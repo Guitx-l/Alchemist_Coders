@@ -25,3 +25,12 @@ Installation/Mise à jour robot-soccer-kitdu package : fichier compatible window
 
 driver rsk : https://github.com/robot-soccer-kit/robot-soccer-kit/tree/master/rsk
 
+# date rsk 
+
+Jeudi 10 avril
+Samedi 29 Mars
+Samedi 31 mars 
+Dimanche 1 Juin
+
+Italie 12 <-> 15 juin
+Bresil 15 au 21 juillet

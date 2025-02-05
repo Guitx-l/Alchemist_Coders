@@ -104,43 +104,47 @@ def defenseur1():
 #
 #
 
-
-with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
-    try:
-        robot1 = client.robots[color][1]
-        robot2 = client.robots[color][2]
-        robotennemis1 = client.robots[colorennemis][1]
-        robotennemis2 = client.robots[colorennemis][2]
-        
-        refRobot1 = client.referee[team][color]["robots"]['1']
-        refRobot2 = client.referee[team][color]["robots"]['2']
-        """Il suffira de multiplier les x des robot et le l'emplacement des cages
-        par x_pos pour obenir la position souhaité en fonction du coté de notre camp"""
-            
-    except Exception as e :
-        print("erreur début with rsk.client... : ",e)
-    arrived = True
-
-
-
-
-
-    
-    while True :
-
+def lancement():
+    with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
         try:
-            # Position + orientation (x [m], y [m], theta [rad])
-            # position p -> piloté  e -> ennemis
-            pp1 = robot1.pose
-            pp2 = robot2.pose
-            pe1 = robotennemis1.pose
-            pe2 = robotennemis2.pose
-            pBalle = client.ball
-            # postition que le défenceur doit prendre pour se positionner au niveaux des cages
-            # ATTENTION pbut = - constants.defense_area_width car constants.defense_area_width
+            robot1 = client.robots[color][1]
+            robot2 = client.robots[color][2]
+            robotennemis1 = client.robots[colorennemis][1]
+            robotennemis2 = client.robots[colorennemis][2]
+            
+            refRobot1 = client.referee[team][color]["robots"]['1']
+            refRobot2 = client.referee[team][color]["robots"]['2']
+            """Il suffira de multiplier les x des robot et le l'emplacement des cages
+            par x_pos pour obenir la position souhaité en fonction du coté de notre camp"""
+                
         except Exception as e :
-            print("erreur début while true : ",e)
+            print("erreur début with rsk.client... : ",e)
+        arrived = True
+
+
+
+
 
         
-        cages[cote](pBalle)
-        defenseur[cote]()
+        while True :
+
+            try:
+                # Position + orientation (x [m], y [m], theta [rad])
+                # position p -> piloté  e -> ennemis
+                pp1 = robot1.pose
+                pp2 = robot2.pose
+                pe1 = robotennemis1.pose
+                pe2 = robotennemis2.pose
+                pBalle = client.ball
+                # postition que le défenceur doit prendre pour se positionner au niveaux des cages
+                # ATTENTION pbut = - constants.defense_area_width car constants.defense_area_width
+            except Exception as e :
+                print("erreur début while true : ",e)
+
+            
+            cages[cote](pBalle)
+            defenseur[cote]()
+
+
+
+lancement()

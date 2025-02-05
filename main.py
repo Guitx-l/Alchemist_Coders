@@ -4,15 +4,12 @@ from rsk import constants
 from math import pi
 import time
 import main_shooter
+import util
+import sys
 
-#threading.Thread(target=lambda *_: main_shooter.main("-t green -q --host rsk.simulateur.les-amicales.fr -k 01234".split(" "))).start()
+threading.Thread(target=lambda *_: main_shooter.main("-t green -q --host 127.0.0.1".split(" "))).start()
 
-import rsk
-from rsk import constants
-from math import pi
-import time
-
-color = "blue"
+color = "green"
 team = "teams"
 
 if (color == "blue") :
@@ -99,7 +96,11 @@ def defenseur():
 
 
 
-with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
+with rsk.Client(host='127.0.0.1', key='') as client:
+    
+    argument = util.get_parser("Denfender script").parse_args(sys.argv[1::])
+    argument.team
+
     try:
         robot1 = client.robots[color][1]
         robot2 = client.robots[color][2]
@@ -128,7 +129,8 @@ with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
             print("game isn't running")
         if(ref["game_is_running"]):
 
-            
+        
+            pbut = constants.defense_area_width
 
             while True :
 
@@ -158,3 +160,6 @@ with rsk.Client(host='rsk.simulateur.les-amicales.fr', key='43210') as client:
                 cages(pBalle)
 
                 defenseur()
+
+                    
+lancement()

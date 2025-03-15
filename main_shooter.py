@@ -50,11 +50,12 @@ class IClient(abc.ABC):
         return abs(math.atan2(*reversed(pos1 - base)) - math.atan2(*reversed(pos2 - base)))
 
     @abc.abstractmethod
-    def ball_is_behind(self, ball: np.ndarray[float]) -> bool: ...
+    def ball_is_behind(self, ball: np.ndarray[float]) -> bool:
+        """:returns True if the ball is "behind" the shooter else False"""
 
     @abc.abstractmethod
     def goal_sign(self) -> int:
-        ":returns -1 if the goal is on the left else 1"
+        """:returns -1 if the goal is on the left else 1"""
 
     @final
     def update(self) -> None:

@@ -99,16 +99,17 @@ class IShooterClient(abc.ABC):
                 self.shooter.goto((0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]))
             else:
                 self.shooter.goto(self.shooter.pose)
-            self.logger.debug("evading abusive attack")
             raise rsk.client.ClientError("#expected: abusive_attack evade")
 
         # evade abusive_defense
-        if self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(ball):
-            if self.is_inside_defense_zone(self.shooter.position):
-                self.shooter.goto(-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2])
-            else:
-                self.shooter.goto(self.shooter.pose)
+        if self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position):
+            self.shooter.goto((-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]))
+            self.logger.debug("evading abusive defense")
+            raise rsk.client.ClientError("#expected: abusive_defense evade")
+
+        elif self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(ball):
             self.shooter.goto(self.shooter.pose)
+            self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
         if util.is_inside_court(ball):

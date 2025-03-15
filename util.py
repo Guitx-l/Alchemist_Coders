@@ -1,56 +1,31 @@
 import rsk
-from typing import Iterable
 import numpy as np
-from typing import TypedDict, Literal, Any
+from typing import Literal, Any, Sequence
 import argparse
 from datetime import datetime
 from colorama import Fore, init
 init(autoreset=True)
 
 
-class Referee:
-    def __init__(self, referee: dict):
-        self.__dict__ = referee.copy()
-
-
-class Robots:
-    def __init__(self, robots: dict[str, dict]):
-        self.robots = robots
-        self.indexes = (
-            ("green", 1),
-            ("green", 2),
-            ("blue", 1),
-            ("blue", 2)
-        )
-        self.index = -1
-
-    def __iter__(self):
-        return self
-
-    def __next__(self) -> rsk.client.ClientRobot:
-        self.index += 1
-        if self.index > 3:
-            raise StopIteration
-        i = self.indexes[self.index]
-        return self.robots[i[0]][i[1]]
-
-    def __len__(self):
-        return 4
-
-    def __getitem__(self, item: int) -> rsk.client.ClientRobot:
-        return self.robots[self.indexes[item][0]][self.indexes[item][1]]
-
-
 def is_inside_circle(point: np.ndarray[float], center: np.ndarray[float], radius: float) -> bool:
     return sum((center - point) ** 2) <= radius ** 2
 
 
-def is_inside_rect(point: Iterable[float], bottomleft: Iterable[float], topright: Iterable[float]) -> bool:
+def is_inside_rect(point: Sequence[float], bottomleft: Sequence[float], topright: Sequence[float]) -> bool:
     return bottomleft[0] <= point[0] <= topright[0] and bottomleft[1] <= point[1] <= topright[1]
 
 
-def is_inside_court(x: Iterable[float]) -> bool:
+def is_inside_court(x: Sequence[float]) -> bool:
     return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
+
+
+def is_inside_right_zone(x: Sequence[float]) -> bool:
+    return x[0] >= rsk.constants.field_length/2 - rsk.constants.defense_area_length and rsk.constants.defense_area(True)[0][1] <= x[1] <= rsk.constants.defense_area(True)[1][1]
+
+
+def is_inside_left_zone(x: Sequence[float]) -> bool:
+    return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
+
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=desc)
@@ -101,4 +76,5 @@ class Logger:
             self.log(message, 'debug', **kwargs)
 
 if __name__ == "__main__":
-    print({"A":1} | {"A":2})
+    print(rsk.constants.defense_area(True))
+    print(rsk.constants.defense_area(False))

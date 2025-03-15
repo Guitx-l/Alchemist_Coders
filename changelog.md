@@ -1,11 +1,10 @@
 ## TODO:
-- clamp evade abuses in court
 - fix that wierd aah bug (no timed circle entry)
 - better aim system (anticipation & reaction)
 
 ## PENDING:
-- evade abusive_attack
 - evade abusive_defense
+- clamp evade abuses in court
 
 ## RESOLVED:
 - shooter going out the court

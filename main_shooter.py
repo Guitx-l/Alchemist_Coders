@@ -26,6 +26,7 @@ class IClient(abc.ABC):
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
         self.logger = util.Logger(self.__class__.__name__, True)
+        self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
@@ -46,6 +47,11 @@ class IClient(abc.ABC):
     def is_inside_timed_circle(self, ball: np.ndarray[float]) -> bool:
         return util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius)
 
+    def kick(self, power: float = 1) -> None:
+        if time.time() - self._last_kick > 1:
+            self.shooter.kick(power)
+            self._last_kick = time.time()
+
     @abc.abstractmethod
     def update(self) -> None: ...
 
@@ -56,6 +62,7 @@ class MainClient(IClient):
             raise rsk.client.ClientError("#expected: ball is none")
         ball = self.client.ball
 
+        #evading ball abuse
         if self.is_inside_timed_circle(ball):
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 self.logger.debug(f'Avoiding ball_abuse ({time.time() - self.last_ball_overlap})')
@@ -78,13 +85,19 @@ class MainClient(IClient):
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1))
                 self.shooter.goto((*pos, angle), wait=True)
 
-            # elif the ball, the shooter and the goal and kind of misaligned
-            elif math.degrees(self.get_alignment(self.shooter.position, ball, self.goal_pos)) > 10:
+            # else if the shooter is not facing the ball
+            elif (ball[1] - self.shooter.pose[1]) * (self.goal_pos[1] - ball[1]) < 0:
+                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=False)
+                self.logger.debug('idk bug detected')
+                return
+
+            # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
+            elif math.degrees(self.get_alignment(self.shooter.position, ball, self.goal_pos)) > 10 or self.is_inside_timed_circle(ball):
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=False)
 
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
             if util.is_inside_circle(self.shooter.position, ball, 0.12):
-                self.shooter.kick(1)
+                self.kick(1)
                 self.logger.debug(f"kicking")
         else:
             self.shooter.goto(self.shooter.pose)

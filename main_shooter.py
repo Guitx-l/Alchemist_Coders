@@ -12,7 +12,7 @@ from pygame import Vector2
 from util import is_inside_court
 
 logger = util.Logger(__name__, True)
-from typing import Sequence, final
+from typing import Sequence, final, Literal
 
 def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     #finding the shooter pos
@@ -49,12 +49,27 @@ class IClient(abc.ABC):
     def get_alignment(self, pos1: np.ndarray[float], pos2: np.ndarray[float], base: np.ndarray[float]) -> float:
         return abs(math.atan2(*reversed(pos1 - base)) - math.atan2(*reversed(pos2 - base)))
 
-    @abc.abstractmethod
     def ball_is_behind(self, ball: np.ndarray[float]) -> bool:
         """:returns True if the ball is "behind" the shooter else False"""
+        if self.goal_sign() == 1:
+            return ball[0] < self.shooter.position[0]
+        return ball[0] > self.shooter.position[0]
+
+    def get_opposing_defender(self) -> rsk.client.ClientRobot:
+        opposing_team: str = "blue" if self.shooter.team == "green" else "green"
+        if self.goal_sign() == 1:
+            if self.client.robots[opposing_team][1].position[0] < self.client.robots[opposing_team][2].position[0]:
+                return self.client.robots[opposing_team][2]
+            else:
+                return self.client.robots[opposing_team][1]
+        else:
+            if self.client.robots[opposing_team][1].position[0] > self.client.robots[opposing_team][2].position[0]:
+                return self.client.robots[opposing_team][2]
+            else:
+                return self.client.robots[opposing_team][1]
 
     @abc.abstractmethod
-    def goal_sign(self) -> int:
+    def goal_sign(self) -> Literal[1, -1]:
         """:returns -1 if the goal is on the left else 1"""
 
     @final
@@ -108,9 +123,6 @@ class MainClient(IClient):
     def goal_sign(self) -> int:
         return 1
 
-    def ball_is_behind(self, ball: np.ndarray[float]) -> bool:
-        return ball[0] < self.shooter.position[0]
-
 
 
 class RotatedClient(IClient):
@@ -124,9 +136,6 @@ class RotatedClient(IClient):
 
     def goal_sign(self) -> int:
         return -1
-
-    def ball_is_behind(self, ball: np.ndarray[float]) -> bool:
-        return ball[0] > self.shooter.position[0]
 
 
 

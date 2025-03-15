@@ -1,11 +1,11 @@
 ## TODO:
-- evade abusive_attack
-- evade abusive_defense
 - clamp evade abuses in court
 - fix that wierd aah bug (no timed circle entry)
+- better aim system (anticipation & reaction)
 
 ## PENDING:
-- refactor using the template method pattern
+- evade abusive_attack
+- evade abusive_defense
 
 ## RESOLVED:
 - shooter going out the court
@@ -15,4 +15,4 @@
 - go behind ball
 - abusive kicks
 - the push ball bug
-- no wait=True
+- refactor using the template method pattern

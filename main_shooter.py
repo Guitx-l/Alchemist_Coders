@@ -88,7 +88,8 @@ class IShooterClient(abc.ABC):
                 if util.is_inside_court(pos):
                     self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
                 else:
-                    self.shooter.goto((*Vector2(*(-ball)).normalize() * rsk.constants.timed_circle_radius, self.shooter.orientation), wait=True)
+                    self.logger.debug(f"isk ball_abuse fix {Vector2(*(-ball)).normalize() * rsk.constants.timed_circle_radius + ball}")
+                    self.shooter.goto((*Vector2(*(-ball)).normalize() * (rsk.constants.timed_circle_radius + 0.1) + ball, self.shooter.orientation), wait=True)
                 self.last_ball_overlap = time.time()
         else:
             self.last_ball_overlap = time.time()

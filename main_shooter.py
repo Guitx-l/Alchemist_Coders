@@ -126,13 +126,14 @@ class IShooterClient(abc.ABC):
                 self.shooter.goto((*pos, angle), wait=True)
 
             # else if the push ball bug is detected
+            """
             elif (ball[1] - self.shooter.pose[1]) * (self.goal_pos[1] - ball[1]) < 0:
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.5), wait=True)
                 self.logger.debug('idk bug detected')
                 return
-
+            """
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-            elif math.degrees(get_alignment(self.shooter.position, ball, self.goal_pos)) > 10 or self.is_inside_timed_circle(ball):
+            if math.degrees(get_alignment(self.shooter.position, ball, self.goal_pos)) > 10 or self.is_inside_timed_circle(ball):
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=False)
 
             self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)

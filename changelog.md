@@ -2,6 +2,7 @@
 - that wierd aah bug (no timed circle entry)
 
 ## TODO:
+- go behind ball not working if ball right behing shooter
 - lots of little thingies to adjust & sync (push ball fix causing the no timed circle bug sometimes)
 - better aim system (anticipation & reaction) // that's only in my best dreams tbh
 

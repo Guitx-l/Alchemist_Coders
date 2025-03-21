@@ -7,6 +7,7 @@
 - better aim system (anticipation & reaction) // that's only in my best dreams tbh
 
 ## WORK IN PROGRESS:
+- testing setup with small defender
 
 ## NOT FULLY RESOLVED:
 - the push ball bug

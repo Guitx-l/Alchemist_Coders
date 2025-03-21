@@ -94,14 +94,6 @@ class IShooterClient(abc.ABC):
         else:
             self.last_ball_overlap = time.time()
 
-        # evade abusive_attack
-        if self.is_inside_attack_zone(ball):
-            if self.is_inside_attack_zone(self.shooter.position):
-                self.shooter.goto((0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]))
-            else:
-                self.shooter.goto(self.shooter.pose)
-            raise rsk.client.ClientError("#expected: abusive_attack evade")
-
         # evade abusive_defense
         if self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position):
             self.shooter.goto((-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]))

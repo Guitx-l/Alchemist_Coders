@@ -160,6 +160,3 @@ with rsk.Client(host='127.0.0.1', key='') as client:
                 cages(pBalle)
 
                 defenseur()
-
-                    
-lancement()

@@ -7,6 +7,7 @@ import numpy as np
 import math
 import cconstans
 import util
+import enum
 from pygame import Vector2
 from typing import Sequence, final, Literal, Any
 
@@ -18,6 +19,14 @@ def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_sca
 
 def get_alignment(pos1: np.ndarray[float], pos2: np.ndarray[float], base: np.ndarray[Any, float]) -> float:
     return abs(math.atan2(*reversed(pos1 - base)) - math.atan2(*reversed(pos2 - base)))
+
+
+class MovementGoal(enum.Enum):
+    BALL_BEHIND = enum.auto()
+    SHOOT = enum.auto()
+    REPOSITION = enum.auto()
+    BALL_ABUSE = enum.auto()
+    ABUSIVE_DEFENSE = enum.auto()
 
 
 class IShooterClient(abc.ABC):
@@ -110,7 +119,7 @@ class IShooterClient(abc.ABC):
                 ball_vector = Vector2(*(self.shooter.position - ball))
                 ball_vector.x *= -1
                 pos = ball + ball_vector.normalize() * cconstans.shooter_offset
-                angle = math.atan2(-ball_vector.y, -ball_vector.x)
+                angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
                 if 0 <= math.degrees(angle) < 35:
                     pos = ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
                 elif -35 < math.degrees(angle) < 0:

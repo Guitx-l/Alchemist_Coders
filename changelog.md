@@ -7,7 +7,7 @@
 - better aim system (anticipation & reaction) // that's only in my best dreams tbh
 
 ## WORK IN PROGRESS:
-- testing setup with small defender
+-no goto 
 
 ## NOT FULLY RESOLVED:
 - the push ball bug
@@ -22,3 +22,4 @@
 - void kicks
 - refactor using the template method pattern
 - evade abusive_defense
+- testing setup with small defender

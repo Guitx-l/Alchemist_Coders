@@ -75,6 +75,17 @@ class Logger:
         if self.enable_debug:
             self.log(message, 'debug', **kwargs)
 
+import enum
+class MovementGoal(enum.IntEnum):
+    BALL_BEHIND = 1
+    SHOOT = -1
+    REPOSITION = -2
+    BALL_ABUSE = 2
+    ABUSIVE_DEFENSE = 3
+
 if __name__ == "__main__":
-    print(rsk.constants.defense_area(True))
-    print(rsk.constants.defense_area(False))
+    print(
+        MovementGoal.BALL_BEHIND,
+        MovementGoal.SHOOT,
+        MovementGoal.REPOSITION
+    )

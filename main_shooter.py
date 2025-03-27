@@ -17,16 +17,16 @@ def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_sca
     shooter_pos: np.ndarray = ball_to_goal_vec * -shooter_offset_scale + goal_pos
     return (shooter_pos[0], shooter_pos[1], math.atan2(*reversed(ball_to_goal_vec)))
 
-def get_alignment(pos1: np.ndarray[float], pos2: np.ndarray[float], base: np.ndarray[Any, float]) -> float:
+def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
     return abs(math.atan2(*reversed(pos1 - base)) - math.atan2(*reversed(pos2 - base)))
 
 
-class MovementGoal(enum.Enum):
-    BALL_BEHIND = enum.auto()
-    SHOOT = enum.auto()
-    REPOSITION = enum.auto()
-    BALL_ABUSE = enum.auto()
-    ABUSIVE_DEFENSE = enum.auto()
+class GotoReason(enum.IntEnum):
+    BALL_ABUSE = 3
+    ABUSIVE_DEFENSE = 2
+    BALL_BEHIND = 1
+    REPOSITION = -1
+    SHOOT = -2
 
 
 class IShooterClient(abc.ABC):
@@ -34,10 +34,16 @@ class IShooterClient(abc.ABC):
         self.client = client
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.referee: dict = self.client.referee
+
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
         self.logger = util.Logger(self.__class__.__name__, True)
         self._last_kick: float = time.time()
+
+        self.goto_dict: dict[GotoReason, tuple[float, float, float] | None] = {}
+        self.last_goto: GotoReason | None = None
+
+
 
     def on_pause(self) -> None:
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
@@ -65,13 +71,11 @@ class IShooterClient(abc.ABC):
         if self.goal_sign() == 1:
             if self.client.robots[opposing_team][1].position[0] < self.client.robots[opposing_team][2].position[0]:
                 return self.client.robots[opposing_team][2]
-            else:
-                return self.client.robots[opposing_team][1]
+            return self.client.robots[opposing_team][1]
         else:
             if self.client.robots[opposing_team][1].position[0] > self.client.robots[opposing_team][2].position[0]:
                 return self.client.robots[opposing_team][2]
-            else:
-                return self.client.robots[opposing_team][1]
+            return self.client.robots[opposing_team][1]
 
     @abc.abstractmethod
     def goal_sign(self) -> Literal[1, -1]:
@@ -82,6 +86,22 @@ class IShooterClient(abc.ABC):
 
     @abc.abstractmethod
     def is_inside_defense_zone(self, x: Sequence[float]) -> bool:...
+
+    @final
+    def goto(self, target: tuple[float, float, float], reason: GotoReason) -> None:
+        self.goto_dict[reason] = target
+
+        for key, value in self.goto_dict.items():
+            if value is None: continue
+            if util.is_inside_circle(self.shooter.position, np.array(value[0:2]), 0.05):
+                self.goto_dict[key] = None
+
+        for _, value in sorted(self.goto_dict.items(), key=lambda x: x[0], reverse=True):
+            if value is None:
+                continue
+            else:
+                self.shooter.goto(target, wait=False)
+                break
 
     @final
     def update(self) -> None:
@@ -126,13 +146,6 @@ class IShooterClient(abc.ABC):
                     pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
                 self.shooter.goto((*pos, angle), wait=True)
 
-            # else if the push ball bug is detected
-            """
-            elif (ball[1] - self.shooter.pose[1]) * (self.goal_pos[1] - ball[1]) < 0:
-                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.5), wait=True)
-                self.logger.debug('idk bug detected')
-                return
-            """
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, ball, self.goal_pos)) > 10 or self.is_inside_timed_circle(ball):
                 self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=False)

@@ -7,26 +7,24 @@ import numpy as np
 import math
 import cconstans
 import util
-import enum
+import keyboard
 from pygame import Vector2
-from typing import Sequence, final, Literal, Any
+from typing import Sequence, final, Literal, Any, Callable
 
-def get_shoot_pos(goal_pos: np.ndarray, ball_pos: np.ndarray, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
+type array = np.ndarray[2, np.dtype[Any]]
+
+def angle_of(pos: Sequence[float]) -> float:
+    return math.atan2(pos[1], pos[0])
+
+def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     #finding the shooter pos
     ball_to_goal_vec = goal_pos - ball_pos
-    shooter_pos: np.ndarray = ball_to_goal_vec * -shooter_offset_scale + goal_pos
-    return (shooter_pos[0], shooter_pos[1], math.atan2(*reversed(ball_to_goal_vec)))
+    shooter_pos: array = ball_to_goal_vec * -shooter_offset_scale + goal_pos
+    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vec)
 
 def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
-    return abs(math.atan2(*reversed(pos1 - base)) - math.atan2(*reversed(pos2 - base)))
+    return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
-
-class GotoReason(enum.IntEnum):
-    BALL_ABUSE = 3
-    ABUSIVE_DEFENSE = 2
-    BALL_BEHIND = 1
-    REPOSITION = -1
-    SHOOT = -2
 
 
 class IShooterClient(abc.ABC):
@@ -40,11 +38,6 @@ class IShooterClient(abc.ABC):
         self.logger = util.Logger(self.__class__.__name__, True)
         self._last_kick: float = time.time()
 
-        self.goto_dict: dict[GotoReason, tuple[float, float, float] | None] = {}
-        self.last_goto: GotoReason | None = None
-
-
-
     def on_pause(self) -> None:
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
         self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {np.around(self.goal_pos[1], 3)}")
@@ -52,19 +45,19 @@ class IShooterClient(abc.ABC):
     def startup(self) -> None:
         self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
 
-    def is_inside_timed_circle(self, ball: np.ndarray[float]) -> bool:
-        return util.is_inside_circle(self.shooter.position, ball, rsk.constants.timed_circle_radius)
+    def is_inside_timed_circle(self) -> bool:
+        return util.is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
 
     def kick(self, power: float = 1) -> None:
         if time.time() - self._last_kick > 1:
             self.shooter.kick(power)
             self._last_kick = time.time()
 
-    def ball_is_behind(self, ball: np.ndarray[float]) -> bool:
+    def ball_behind(self) -> bool:
         """:returns True if the ball is "behind" the shooter else False"""
         if self.goal_sign() == 1:
-            return ball[0] < self.shooter.position[0]
-        return ball[0] > self.shooter.position[0]
+            return self.ball[0] < self.shooter.position[0]
+        return self.ball[0] > self.shooter.position[0]
 
     def get_opposing_defender(self) -> rsk.client.ClientRobot:
         opposing_team: str = "blue" if self.shooter.team == "green" else "green"
@@ -77,6 +70,23 @@ class IShooterClient(abc.ABC):
                 return self.client.robots[opposing_team][2]
             return self.client.robots[opposing_team][1]
 
+    def faces_ball(self, threshold: int = 10) -> bool:
+        ball_angle: int = (round(math.degrees(angle_of(self.ball - self.shooter.position))) + 360) % 360
+        shooter_angle = round(math.degrees(self.shooter.orientation)) % 360
+        return -threshold <= shooter_angle - ball_angle <= threshold
+
+    def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda x: True, raise_exception: bool = False):
+        while (not self.shooter.goto(target, wait=False)) and condition:
+            continue
+        self.shooter.control(0, 0, 0)
+        if raise_exception:
+            raise rsk.client.ClientError()
+
+
+    @property
+    def ball(self) -> array:
+        return self.client.ball
+
     @abc.abstractmethod
     def goal_sign(self) -> Literal[1, -1]:
         """:returns -1 if the goal is on the left else 1"""
@@ -88,74 +98,57 @@ class IShooterClient(abc.ABC):
     def is_inside_defense_zone(self, x: Sequence[float]) -> bool:...
 
     @final
-    def goto(self, target: tuple[float, float, float], reason: GotoReason) -> None:
-        self.goto_dict[reason] = target
-
-        for key, value in self.goto_dict.items():
-            if value is None: continue
-            if util.is_inside_circle(self.shooter.position, np.array(value[0:2]), 0.05):
-                self.goto_dict[key] = None
-
-        for _, value in sorted(self.goto_dict.items(), key=lambda x: x[0], reverse=True):
-            if value is None:
-                continue
-            else:
-                self.shooter.goto(target, wait=False)
-                break
-
-    @final
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
-        ball = self.client.ball
+        target = self.shooter.pose
 
         #evading ball_abuse
-        if self.is_inside_timed_circle(ball):
+        if self.is_inside_timed_circle():
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 self.logger.debug(f'Avoiding ball_abuse ({time.time() - self.last_ball_overlap})')
-                pos: Vector2 = Vector2(*(self.shooter.position - ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
+                pos: Vector2 = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
-                    self.shooter.goto((pos.x, pos.y, self.shooter.orientation), wait=True)
+                    t = (pos.x, pos.y, self.shooter.orientation)
                 else:
-                    self.logger.debug(f"isk ball_abuse fix {Vector2(*(-ball)).normalize() * rsk.constants.timed_circle_radius + ball}")
-                    self.shooter.goto((*Vector2(*(-ball)).normalize() * (rsk.constants.timed_circle_radius + 0.1) + ball, self.shooter.orientation), wait=True)
+                    self.logger.debug(f"isk ball_abuse fix {Vector2(*(-self.ball)).normalize() * rsk.constants.timed_circle_radius + self.ball}")
+                    t = (*Vector2(*(-self.ball)).normalize() * (rsk.constants.timed_circle_radius + 0.1) + self.ball, self.shooter.orientation)
+                self.goto_condition(t, self.is_inside_timed_circle)
                 self.last_ball_overlap = time.time()
         else:
             self.last_ball_overlap = time.time()
 
         # evade abusive_defense
         if self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position):
-            self.shooter.goto((-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]))
+            self.shooter.goto((-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]), wait=True)
             self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
-        elif self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(ball):
-            self.shooter.goto(self.shooter.pose)
+        elif self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.ball):
             self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
-        if util.is_inside_court(ball):
-            if self.ball_is_behind(ball):
-                ball_vector = Vector2(*(self.shooter.position - ball))
+        if util.is_inside_court(self.ball):
+            if self.ball_behind():
+                ball_vector = Vector2(*(self.shooter.position - self.ball))
                 ball_vector.x *= -1
-                pos = ball + ball_vector.normalize() * cconstans.shooter_offset
+                pos = self.ball + ball_vector.normalize() * cconstans.shooter_offset
                 angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
                 if 0 <= math.degrees(angle) < 35:
-                    pos = ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
+                    pos = self.ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
                 elif -35 < math.degrees(angle) < 0:
-                    pos = ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
+                    pos = self.ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
                 self.shooter.goto((*pos, angle), wait=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-            if math.degrees(get_alignment(self.shooter.position, ball, self.goal_pos)) > 10 or self.is_inside_timed_circle(ball):
-                self.shooter.goto(get_shoot_pos(self.goal_pos, ball, 1.2), wait=False)
-
-            self.shooter.goto(get_shoot_pos(self.goal_pos, ball), wait=False)
-            if util.is_inside_circle(self.shooter.position, ball, 0.12):
+            if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(15)):
+                target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
+            else:
+                target = get_shoot_pos(self.goal_pos, self.ball)
+            if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
                 self.kick(1)
-                self.logger.debug(f"kicking")
-        else:
-            self.shooter.goto(self.shooter.pose)
+
+        self.shooter.goto(target, wait=False)
 
 
 
@@ -203,6 +196,8 @@ def main(args: list[str] | None = None):
         pause = True
         shooter_client.startup()
         while True:
+            if keyboard.is_pressed("z"):
+                print(shooter_client.shooter.orientation + 2 * math.pi)
             if c.referee['halftime_is_running']:
                 if halftime:
                     shooter_client = RotatedShooterClient(c, team) if not rotated else MainShooterClient(c, team)

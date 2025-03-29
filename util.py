@@ -5,9 +5,9 @@ import argparse
 from datetime import datetime
 from colorama import Fore, init
 init(autoreset=True)
+type array = np.ndarray[(2, 1), np.dtype[Any]]
 
-
-def is_inside_circle(point: np.ndarray[float], center: np.ndarray[float], radius: float) -> bool:
+def is_inside_circle(point: array, center: array, radius: float) -> bool:
     return sum((center - point) ** 2) <= radius ** 2
 
 

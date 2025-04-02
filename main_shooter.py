@@ -7,11 +7,10 @@ import numpy as np
 import math
 import cconstans
 import util
-import keyboard
 from pygame import Vector2
-from typing import Sequence, final, Literal, Any, Callable
+from typing import Sequence, final, Literal, Any, Callable, Self
 
-type array = np.ndarray[2, np.dtype[Any]]
+type array = np.ndarray[(2, 1), np.dtype[Any]]
 
 def angle_of(pos: Sequence[float]) -> float:
     return math.atan2(pos[1], pos[0])
@@ -24,8 +23,6 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 
 def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
-
-
 
 class IShooterClient(abc.ABC):
     def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
@@ -82,7 +79,6 @@ class IShooterClient(abc.ABC):
         if raise_exception:
             raise rsk.client.ClientError()
 
-
     @property
     def ball(self) -> array:
         return self.client.ball
@@ -107,7 +103,7 @@ class IShooterClient(abc.ABC):
         if self.is_inside_timed_circle():
             if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
                 self.logger.debug(f'Avoiding ball_abuse ({time.time() - self.last_ball_overlap})')
-                pos: Vector2 = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
+                pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
                     t = (pos.x, pos.y, self.shooter.orientation)
                 else:
@@ -132,21 +128,21 @@ class IShooterClient(abc.ABC):
             if self.ball_behind():
                 ball_vector = Vector2(*(self.shooter.position - self.ball))
                 ball_vector.x *= -1
-                pos = self.ball + ball_vector.normalize() * cconstans.shooter_offset
                 angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
-                if 0 <= math.degrees(angle) < 35:
+                if angle >= 0:
                     pos = self.ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
-                elif -35 < math.degrees(angle) < 0:
+                else:
                     pos = self.ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
-                self.shooter.goto((*pos, angle), wait=True)
+                ball = self.ball
+                self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.1, raise_exception=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(15)):
                 target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
             else:
-                target = get_shoot_pos(self.goal_pos, self.ball)
+                target = get_shoot_pos(self.goal_pos, self.ball, 0.8)
             if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
-                self.kick(1)
+                self.kick()
 
         self.shooter.goto(target, wait=False)
 
@@ -196,8 +192,6 @@ def main(args: list[str] | None = None):
         pause = True
         shooter_client.startup()
         while True:
-            if keyboard.is_pressed("z"):
-                print(shooter_client.shooter.orientation + 2 * math.pi)
             if c.referee['halftime_is_running']:
                 if halftime:
                     shooter_client = RotatedShooterClient(c, team) if not rotated else MainShooterClient(c, team)

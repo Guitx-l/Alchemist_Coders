@@ -4,14 +4,14 @@
 ## TODO:
 - lots of little thingies to adjust & sync
 - better aim system (anticipation & reaction) // that's not my priority rn
+- turbo mode
 - simple goalkeeper
 
 ## WORK IN PROGRESS:
--no complete wait=True
+- no complete wait=True
+- the push ball bug
 
 ## NOT FULLY RESOLVED:
-- the push ball bug
-- clamp evade abuses in court
 
 ## RESOLVED:
 - shooter going out the court

@@ -1,15 +1,14 @@
-## NON REPRODUCIBLE:
+## DISAPPEARED:
 - that wierd aah bug (no timed circle entry)
 
 ## TODO:
 - lots of little thingies to adjust & sync
 - better aim system (anticipation & reaction) // that's not my priority rn
-- turbo mode
-- simple goalkeeper
+- coordination between the goalkeeper and the shooter
 
 ## WORK IN PROGRESS:
-- no complete wait=True
 - the push ball bug
+- simple goalkeeper
 
 ## NOT FULLY RESOLVED:
 
@@ -23,5 +22,6 @@
 - refactor using the template method pattern
 - evade abusive_defense
 - testing setup with small defender
-- go behind ball not working if ball right behing shooter
+- go behind ball not working if ball right behind shooter
 - goto_condition/single-goto
+- speed boost

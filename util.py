@@ -1,10 +1,12 @@
 import rsk
+import abc
 import numpy as np
 from typing import Literal, Any, Sequence
 import argparse
 from datetime import datetime
 from colorama import Fore, init
 init(autoreset=True)
+
 type array = np.ndarray[(2, 1), np.dtype[Any]]
 
 def is_inside_circle(point: array, center: array, radius: float) -> bool:
@@ -75,17 +77,37 @@ class Logger:
         if self.enable_debug:
             self.log(message, 'debug', **kwargs)
 
-import enum
-class MovementGoal(enum.IntEnum):
-    BALL_BEHIND = 1
-    SHOOT = -1
-    REPOSITION = -2
-    BALL_ABUSE = 2
-    ABUSIVE_DEFENSE = 3
+
+
+class IClient(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
+        self.client = client
+        self.logger: Logger = Logger(self.__class__.__name__, True)
+        self.referee: dict = self.client.referee
+
+    @abc.abstractmethod
+    def goal_sign(self) -> Literal[1, -1]:
+        pass
+
+    @abc.abstractmethod
+    def update(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    def startup(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    def on_pause(self) -> None:
+        pass
+
+    @property
+    def ball(self) -> array:
+        return self.client.ball
+
+
+
 
 if __name__ == "__main__":
-    print(
-        MovementGoal.BALL_BEHIND,
-        MovementGoal.SHOOT,
-        MovementGoal.REPOSITION
-    )
+    pass

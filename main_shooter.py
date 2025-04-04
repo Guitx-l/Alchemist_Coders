@@ -24,15 +24,12 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
-class IShooterClient(abc.ABC):
-    def __init__(self, client: rsk.Client, team: str = 'blue') -> None:
-        self.client = client
+class IShooterClient(util.IClient):
+    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
+        super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
-        self.referee: dict = self.client.referee
-
         self.last_ball_overlap: float = time.time()
         self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-        self.logger = util.Logger(self.__class__.__name__, True)
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
@@ -79,9 +76,8 @@ class IShooterClient(abc.ABC):
         if raise_exception:
             raise rsk.client.ClientError()
 
-    @property
-    def ball(self) -> array:
-        return self.client.ball
+    def abusive_defense_condition(self) -> bool:
+        return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
 
     @abc.abstractmethod
     def goal_sign(self) -> Literal[1, -1]:
@@ -115,8 +111,8 @@ class IShooterClient(abc.ABC):
             self.last_ball_overlap = time.time()
 
         # evade abusive_defense
-        if self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position):
-            self.shooter.goto((-0.4 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]), wait=True)
+        if self.abusive_defense_condition():
+            self.goto_condition((-0.6 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]), condition=self.abusive_defense_condition)
             self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 

@@ -1,10 +1,12 @@
 import rsk
 import abc
-import numpy as np
-from typing import Literal, Any, Sequence
+import sys
 import argparse
-from datetime import datetime
+import numpy as np
 from colorama import Fore, init
+from datetime import datetime
+from typing import Literal, Any, Sequence, Type
+
 init(autoreset=True)
 
 type array = np.ndarray[(2, 1), np.dtype[Any]]
@@ -29,6 +31,7 @@ def is_inside_left_zone(x: Sequence[float]) -> bool:
     return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
 
 
+
 def get_parser(desc: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-r', '--rotated', action='store_true', help="the game will start with the rotated client if specified")
@@ -39,6 +42,8 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     group.add_argument('-v', '--verbose', action='store_true')
     group.add_argument('-q', '--quiet', action='store_true')
     return parser
+
+
 
 class Logger:
     def __init__(self, name: str, debug: bool, quiet: bool = False, verbose: bool = False):
@@ -106,7 +111,46 @@ class IClient(abc.ABC):
     def ball(self) -> array:
         return self.client.ball
 
+    def is_inside_defense_zone(self, pos: Sequence[float]) -> bool:
+        if self.goal_sign() == 1:
+            return is_inside_left_zone(pos)
+        return is_inside_right_zone(pos)
 
+
+
+def start_client(MainClass: Type[IClient], RotatedClass: Type[IClient], args: list[str] | None = None):
+    arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
+    logger = Logger("client_loader", True)
+    logger.info(f"args: {arguments}")
+    team = arguments.team
+    rotated: bool = arguments.rotated
+
+    with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel
+        client = MainClass(c, team) if not rotated else RotatedClass(c, team)
+        halftime = True
+        pause = True
+        client.startup()
+        while True:
+            if c.referee['halftime_is_running']:
+                if halftime:
+                    client = RotatedClass(c, team) if not rotated else MainClass(c, team)
+                    logger.info(f"halftime, changing into {client.__class__}")
+                    rotated = not rotated
+                    halftime = False
+            else:
+                halftime = True
+            if c.referee["game_paused"]:
+                if pause:
+                    client.on_pause()
+                    pause = False
+            else:
+                pause = True
+
+            try:
+                client.update()
+            except rsk.client.ClientError as e:
+                if arguments.verbose:
+                    client.logger.warn(e)
 
 
 if __name__ == "__main__":

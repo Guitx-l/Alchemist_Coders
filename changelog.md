@@ -4,15 +4,16 @@
 ## TODO:
 - lots of little thingies to adjust & sync
 - better aim system (anticipation & reaction) // that's not my priority rn
-- coordination between the goalkeeper and the shooter
+- coordination between the goalkeeper and the shooter // that too is NOT my primary feature rn 
 
 ## WORK IN PROGRESS:
+- advanced goalkeeper
 - the push ball bug
-- simple goalkeeper
+
 
 ## NOT FULLY RESOLVED:
 
-## RESOLVED:
+## RESOLVED/FINISHED:
 - shooter going out the court
 - rsk.ClientError gestion
 - infinite circling bug
@@ -25,3 +26,5 @@
 - go behind ball not working if ball right behind shooter
 - goto_condition/single-goto
 - speed boost
+- simple goalkeeper
+- 

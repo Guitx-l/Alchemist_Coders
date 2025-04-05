@@ -1,10 +1,11 @@
-import random
 import abc
-import time
+import sys
 import rsk
-import numpy as np
+import time
 import math
 import util
+import random
+import numpy as np
 from pygame import Vector2
 from typing import Sequence, final, Literal, Any, Callable
 
@@ -22,7 +23,7 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
-class IShooterClient(util.IClient):
+class IShooterClient(util.IClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
@@ -77,12 +78,6 @@ class IShooterClient(util.IClient):
     def abusive_defense_condition(self) -> bool:
         return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
 
-    @abc.abstractmethod
-    def is_inside_attack_zone(self, x: Sequence[float]) -> bool:...
-
-    @abc.abstractmethod
-    def is_inside_defense_zone(self, x: Sequence[float]) -> bool:...
-
     @final
     def update(self) -> None:
         if self.client.ball is None:
@@ -124,7 +119,7 @@ class IShooterClient(util.IClient):
                 else:
                     pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
                 ball = self.ball
-                self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.1, raise_exception=True)
+                self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(15)):
@@ -142,27 +137,13 @@ class MainShooterClient(IShooterClient):
     def goal_sign(self) -> int:
         return 1
 
-    def is_inside_attack_zone(self, x: Sequence[float]) -> bool:
-        return util.is_inside_right_zone(x)
-
-    def is_inside_defense_zone(self, x: Sequence[float]) -> bool:
-        return util.is_inside_left_zone(x)
-
 
 
 class RotatedShooterClient(IShooterClient):
     def goal_sign(self) -> int:
         return -1
 
-    def is_inside_attack_zone(self, x: Sequence[float]) -> bool:
-        return util.is_inside_left_zone(x)
-
-    def is_inside_defense_zone(self, x: Sequence[float]) -> bool:
-        return util.is_inside_right_zone(x)
-
-
-
 
 
 if __name__ == "__main__":
-    print("wrong file, goto __main__.py")
+    util.start_client(MainShooterClient, RotatedShooterClient, sys.argv[1::])

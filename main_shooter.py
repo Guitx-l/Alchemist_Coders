@@ -1,14 +1,12 @@
 import random
-import sys
 import abc
 import time
 import rsk
 import numpy as np
 import math
-import cconstans
 import util
 from pygame import Vector2
-from typing import Sequence, final, Literal, Any, Callable, Self
+from typing import Sequence, final, Literal, Any, Callable
 
 type array = np.ndarray[(2, 1), np.dtype[Any]]
 
@@ -29,11 +27,11 @@ class IShooterClient(util.IClient):
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
-        self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
-        self.goal_pos = np.array([cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
+        self.goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {np.around(self.goal_pos[1], 3)}")
 
     def startup(self) -> None:
@@ -80,10 +78,6 @@ class IShooterClient(util.IClient):
         return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
 
     @abc.abstractmethod
-    def goal_sign(self) -> Literal[1, -1]:
-        """:returns -1 if the goal is on the left else 1"""
-
-    @abc.abstractmethod
     def is_inside_attack_zone(self, x: Sequence[float]) -> bool:...
 
     @abc.abstractmethod
@@ -97,7 +91,7 @@ class IShooterClient(util.IClient):
 
         #evading ball_abuse
         if self.is_inside_timed_circle():
-            if time.time() - self.last_ball_overlap >= cconstans.timed_circle_timeout:
+            if time.time() - self.last_ball_overlap >= 4.0:
                 self.logger.debug(f'Avoiding ball_abuse ({time.time() - self.last_ball_overlap})')
                 pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
@@ -126,9 +120,9 @@ class IShooterClient(util.IClient):
                 ball_vector.x *= -1
                 angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
                 if angle >= 0:
-                    pos = self.ball + (Vector2(-1, -1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
+                    pos = self.ball + (Vector2(-1, -1).normalize() * 0.25 * self.goal_sign())
                 else:
-                    pos = self.ball + (Vector2(-1, 1).normalize() * (cconstans.shooter_offset + .1) * self.goal_sign())
+                    pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
                 ball = self.ball
                 self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.1, raise_exception=True)
 
@@ -157,14 +151,6 @@ class MainShooterClient(IShooterClient):
 
 
 class RotatedShooterClient(IShooterClient):
-    def on_pause(self) -> None:
-        super().on_pause()
-        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-
-    def startup(self) -> None:
-        super().startup()
-        self.goal_pos = np.array([-cconstans.goal_pos[0], random.random() * 0.6 - 0.3])
-
     def goal_sign(self) -> int:
         return -1
 
@@ -175,40 +161,8 @@ class RotatedShooterClient(IShooterClient):
         return util.is_inside_right_zone(x)
 
 
-def main(args: list[str] | None = None):
-    arguments = util.get_parser("Script that runs the shooter (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
-    logger = util.Logger(__name__, True)
-    logger.info(f"args: {arguments}")
-    team: str = arguments.team
-    rotated: bool = arguments.rotated
 
-    with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel
-        shooter_client = MainShooterClient(c, team) if not rotated else RotatedShooterClient(c, team)
-        halftime = True
-        pause = True
-        shooter_client.startup()
-        while True:
-            if c.referee['halftime_is_running']:
-                if halftime:
-                    shooter_client = RotatedShooterClient(c, team) if not rotated else MainShooterClient(c, team)
-                    logger.info(f"halftime, changing into {shooter_client.__class__}")
-                    rotated = not rotated
-                    halftime = False
-            else:
-                halftime = True
-            if c.referee["game_paused"]:
-                if pause:
-                    shooter_client.on_pause()
-                    pause = False
-            else:
-                pause = True
-
-            try:
-                shooter_client.update()
-            except rsk.client.ClientError as e:
-                if arguments.verbose:
-                    shooter_client.logger.warn(e)
 
 
 if __name__ == "__main__":
-    main()
+    print("wrong file, goto __main__.py")

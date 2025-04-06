@@ -1,12 +1,11 @@
 import abc
-from typing import Literal, final
-from util import array
 import rsk
+import sys
 import util
 import math
-import sys
+from typing import Literal, final
 
-class IGoalKeeperClient(util.IClient, abc.ABC):
+class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
@@ -41,13 +40,13 @@ class IGoalKeeperClient(util.IClient, abc.ABC):
             if self.ball[0] * -self.goal_sign() > 0 and abs(self.ball[0]) > 0.9:
                 self.keeper.kick(1)
 
-class MainGoalKeeperClient(IGoalKeeperClient):
+class MainGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return 1
 
-class RotatedGoalKeeperClient(IGoalKeeperClient):
+class RotatedGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return -1
 
 if __name__ == "__main__":
-    util.start_client(MainGoalKeeperClient, RotatedGoalKeeperClient, sys.argv[1::])
+    util.start_client(MainGoalKeeperClient, RotatedGoalKeeperClient)

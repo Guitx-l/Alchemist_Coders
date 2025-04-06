@@ -23,7 +23,7 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
-class IShooterClient(util.IClient, abc.ABC):
+class BaseShooterClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
@@ -133,13 +133,13 @@ class IShooterClient(util.IClient, abc.ABC):
 
 
 
-class MainShooterClient(IShooterClient):
+class MainShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return 1
 
 
 
-class RotatedShooterClient(IShooterClient):
+class RotatedShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return -1
 

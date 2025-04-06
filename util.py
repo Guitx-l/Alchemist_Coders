@@ -84,7 +84,7 @@ class Logger:
 
 
 
-class IClient(abc.ABC):
+class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         self.client = client
@@ -118,7 +118,7 @@ class IClient(abc.ABC):
 
 
 
-def start_client(MainClass: Type[IClient], RotatedClass: Type[IClient], args: list[str] | None = None):
+def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], args: list[str] | None = None):
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     logger = Logger("client_loader", True)
     logger.info(f"args: {arguments}")

@@ -86,7 +86,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
         #evading ball_abuse
         if self.is_inside_timed_circle():
-            if time.time() - self.last_ball_overlap >= 4.0:
+            if time.time() - self.last_ball_overlap >= 3.5:
                 self.logger.debug(f'Avoiding ball_abuse ({time.time() - self.last_ball_overlap})')
                 pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
@@ -110,7 +110,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
         if util.is_inside_court(self.ball):
-            if self.ball_behind():
+            if self.ball_behind() or (self.faces_ball(30) and util.is_inside_circle(self.ball, self.shooter.position, 15)):
                 ball_vector = Vector2(*(self.shooter.position - self.ball))
                 ball_vector.x *= -1
                 angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())

@@ -6,10 +6,10 @@
 - coordination between the goalkeeper and the shooter // that too is NOT my primary feature rn 
 
 ## WORK IN PROGRESS:
-- the push ball bug
 - better aim system (anticipation & reaction)
 
-## NOT FULLY RESOLVED:
+## NOT FULLY RESOLVED/COMPLETELY CHECKED:
+- the push ball bug
 
 ## RESOLVED/FINISHED:
 - shooter going out the court

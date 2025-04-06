@@ -3,13 +3,11 @@
 
 ## TODO:
 - lots of little thingies to adjust & sync
-- better aim system (anticipation & reaction) // that's not my priority rn
 - coordination between the goalkeeper and the shooter // that too is NOT my primary feature rn 
 
 ## WORK IN PROGRESS:
-- advanced goalkeeper
 - the push ball bug
-
+- better aim system (anticipation & reaction)
 
 ## NOT FULLY RESOLVED:
 
@@ -27,4 +25,4 @@
 - goto_condition/single-goto
 - speed boost
 - simple goalkeeper
-- 
+- advanced goalkeeper

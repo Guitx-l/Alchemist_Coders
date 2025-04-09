@@ -7,9 +7,10 @@
 
 ## WORK IN PROGRESS:
 - better aim system (anticipation & reaction)
+- the push ball bug
 
 ## NOT FULLY RESOLVED/COMPLETELY TESTED:
-- the push ball bug
+
 
 ## RESOLVED/FINISHED:
 - shooter going out the court

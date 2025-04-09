@@ -101,7 +101,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
         if util.is_inside_court(self.ball):
-            if self.ball_behind(): #or (self.faces_ball(self.shooter,30) and util.is_inside_circle(self.ball, self.shooter.position, 15)):
+            if self.ball_behind():
                 ball_vector = Vector2(*(self.shooter.position - self.ball))
                 ball_vector.x *= -1
                 angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())

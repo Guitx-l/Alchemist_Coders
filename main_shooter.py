@@ -61,7 +61,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             return self.client.robots[opposing_team][1]
 
     def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda x: True, raise_exception: bool = False):
-        while (not self.shooter.goto(target, wait=False)) and condition:
+        while (not self.shooter.goto(target, wait=False)) and condition():
             continue
         self.shooter.control(0, 0, 0)
         if raise_exception:
@@ -100,28 +100,25 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
 
-        if not util.is_inside_court(self.ball):
-            self.shooter.goto(self.shooter.pose)
-            raise rsk.client.ClientError("#ball out of court")
+        if util.is_inside_court(self.ball):
+            if self.ball_behind(): #or (self.faces_ball(self.shooter,30) and util.is_inside_circle(self.ball, self.shooter.position, 15)):
+                ball_vector = Vector2(*(self.shooter.position - self.ball))
+                ball_vector.x *= -1
+                angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
+                if angle >= 0:
+                    pos = self.ball + (Vector2(-1, -1).normalize() * 0.25 * self.goal_sign())
+                else:
+                    pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
+                ball = self.ball
+                self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
 
-        if self.ball_behind() or (self.faces_ball(self.shooter,30) and util.is_inside_circle(self.ball, self.shooter.position, 15)):
-            ball_vector = Vector2(*(self.shooter.position - self.ball))
-            ball_vector.x *= -1
-            angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
-            if angle >= 0:
-                pos = self.ball + (Vector2(-1, -1).normalize() * 0.25 * self.goal_sign())
+            # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
+            if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
+                target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
             else:
-                pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
-            ball = self.ball.copy()
-            self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
-
-        # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-        if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
-            target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
-        else:
-            target = get_shoot_pos(self.goal_pos, self.ball, 0.8)
-        if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
-            self.kick()
+                target = get_shoot_pos(self.goal_pos, self.ball, 0.8)
+            if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
+                self.kick()
 
         self.shooter.goto(target, wait=False)
 

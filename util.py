@@ -113,6 +113,8 @@ class BaseClient(abc.ABC):
 
     @property
     def ball(self) -> array:
+        if self.client.ball is None:
+            raise rsk.client.ClientError("#ball is none")
         return self.client.ball
 
     def is_inside_defense_zone(self, pos: Sequence[float]) -> bool:
@@ -160,6 +162,8 @@ def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], ar
             except rsk.client.ClientError as e:
                 if arguments.verbose:
                     client.logger.warn(e)
+            except KeyboardInterrupt:
+                sys.exit(0)
 
 
 if __name__ == "__main__":

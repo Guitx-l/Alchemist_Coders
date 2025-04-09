@@ -1,6 +1,7 @@
 import rsk
 import abc
 import sys
+import math
 import argparse
 import numpy as np
 from colorama import Fore, init
@@ -30,6 +31,9 @@ def is_inside_right_zone(x: Sequence[float]) -> bool:
 def is_inside_left_zone(x: Sequence[float]) -> bool:
     return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
 
+
+def angle_of(pos: Sequence[float]) -> float:
+    return math.atan2(pos[1], pos[0])
 
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
@@ -115,6 +119,11 @@ class BaseClient(abc.ABC):
         if self.goal_sign() == 1:
             return is_inside_left_zone(pos)
         return is_inside_right_zone(pos)
+
+    def faces_ball(self, robot: rsk.client.ClientRobot, threshold: int = 10) -> bool:
+        ball_angle: int = (round(math.degrees(angle_of(self.ball - robot.position))) + 360) % 360
+        shooter_angle = round(math.degrees(robot.orientation)) % 360
+        return -threshold <= shooter_angle - ball_angle <= threshold
 
 
 

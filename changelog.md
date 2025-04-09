@@ -8,7 +8,7 @@
 ## WORK IN PROGRESS:
 - better aim system (anticipation & reaction)
 
-## NOT FULLY RESOLVED/COMPLETELY CHECKED:
+## NOT FULLY RESOLVED/COMPLETELY TESTED:
 - the push ball bug
 
 ## RESOLVED/FINISHED:

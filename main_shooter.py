@@ -60,8 +60,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                 return self.client.robots[opposing_team][2]
             return self.client.robots[opposing_team][1]
 
-
-
     def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda x: True, raise_exception: bool = False):
         while (not self.shooter.goto(target, wait=False)) and condition:
             continue

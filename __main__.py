@@ -1,8 +1,7 @@
 import util
-import sys
 import threading
-from main_goalkeeper import MainGoalKeeperClient, RotatedGoalKeeperClient
 from main_shooter import MainShooterClient, RotatedShooterClient
+from main_goalkeeper import MainGoalKeeperClient, RotatedGoalKeeperClient
 
 
 if __name__ == '__main__':

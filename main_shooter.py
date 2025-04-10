@@ -62,7 +62,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda x: True, raise_exception: bool = False):
         while (not self.shooter.goto(target, wait=False)) and condition():
-            continue
+            self.ball_abuse_evade()
         self.shooter.control(0, 0, 0)
         if raise_exception:
             raise rsk.client.ClientError()
@@ -70,15 +70,9 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
     def abusive_defense_condition(self) -> bool:
         return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
 
-    @final
-    def update(self) -> None:
-        if self.client.ball is None:
-            raise rsk.client.ClientError("#expected: ball is none")
-        target = self.shooter.pose
-
-        #evading ball_abuse
+    def ball_abuse_evade(self) -> None:
         if self.is_inside_timed_circle():
-            if time.time() - self.last_ball_overlap >= 3.5:
+            if time.time() - self.last_ball_overlap >= 3.0:
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
                 pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
@@ -89,6 +83,15 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                 self.last_ball_overlap = time.time()
         else:
             self.last_ball_overlap = time.time()
+
+    @final
+    def update(self) -> None:
+        if self.client.ball is None:
+            raise rsk.client.ClientError("#expected: ball is none")
+        target = self.shooter.pose
+
+        #evading ball_abuse
+        self.ball_abuse_evade()
 
         # evade abusive_defense
         if self.abusive_defense_condition():

@@ -1,13 +1,17 @@
 import abc
+
+import numpy as np
 import rsk
 import util
 import math
+from util import array
 from typing import Literal, final
 
 class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
+        self.last_ball_position: array = np.zeros(2)
 
     def startup(self) -> None:
         self.logger.info(f"Running {self.__class__}.startup()...")
@@ -31,12 +35,17 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
         if util.is_inside_court(self.ball):
             if self.is_inside_defense_zone(self.ball):
                 self.keeper.goto((self.ball[0], self.ball[1], self.keeper.orientation), wait=False)
-            else:
+            elif self.faces_ball(self.get_opposing_shooter(), 15):
                 y_keeper = (-self.goal_sign() * math.tan(self.get_opposing_shooter().orientation)) + self.get_opposing_shooter().pose[0]
                 self.keeper.goto((-self.goal_sign(), y_keeper, math.pi if self.goal_sign() == -1 else 0), wait=False)
 
             if util.is_inside_circle(self.ball, self.keeper.position, 0.15):
                 self.keeper.kick(1)
+            if self.ball is not None:
+                self.last_ball_position = self.ball.copy()
+        else:
+            self.keeper.goto(self.keeper.pose)
+            self.last_ball_position = np.zeros(2)
 
 class MainGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:

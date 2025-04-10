@@ -1,5 +1,4 @@
 import abc
-
 import numpy as np
 import rsk
 import util
@@ -35,9 +34,11 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
         if util.is_inside_court(self.ball):
             if self.is_inside_defense_zone(self.ball):
                 self.keeper.goto((self.ball[0], self.ball[1], self.keeper.orientation), wait=False)
-            elif self.faces_ball(self.get_opposing_shooter(), 15):
-                y_keeper = (-self.goal_sign() * math.tan(self.get_opposing_shooter().orientation)) + self.get_opposing_shooter().pose[0]
-                self.keeper.goto((-self.goal_sign(), y_keeper, math.pi if self.goal_sign() == -1 else 0), wait=False)
+            elif util.is_inside_court(self.ball):
+                #y_keeper = ball_vector[1] * (-self.goal_sign() - self.last_ball_position[0]) / ball_vector[0] + self.last_ball_position[1]
+                self.keeper.goto((-self.goal_sign(), self.ball[1], math.pi if self.goal_sign() == -1 else 0), wait=False)
+            else:
+                self.keeper.goto(self.keeper.pose)
 
             if util.is_inside_circle(self.ball, self.keeper.position, 0.15):
                 self.keeper.kick(1)

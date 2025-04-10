@@ -92,7 +92,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
         #evading ball_abuse
         self.ball_abuse_evade()
-
+        """
         # evade abusive_defense
         if self.abusive_defense_condition():
             self.goto_condition((-0.6 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]), condition=self.abusive_defense_condition)
@@ -102,7 +102,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         elif self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.ball):
             self.logger.debug("evading abusive defense")
             raise rsk.client.ClientError("#expected: abusive_defense evade")
-
+        """
         if util.is_inside_court(self.ball):
             if self.ball_behind():
                 ball_vector = Vector2(*(self.shooter.position - self.ball))
@@ -119,7 +119,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
                 target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
             else:
-                target = get_shoot_pos(self.goal_pos, self.ball, 0.8)
+                target = get_shoot_pos(self.goal_pos, self.ball, 1.)
             if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
                 self.kick()
 

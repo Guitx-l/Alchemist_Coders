@@ -33,6 +33,11 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
 
     def defenseur(self):
         orientation = 2 * math.pi if self.goal_sign() == 1 else math.pi
+        halftime = True
+        rotated = self.goal_sign() == -1
+
+        while self.client.ball is None:
+            continue
         if self.keeper.team == "green":
             robot_adv1 = self.client.blue1
             robot_adv2 = self.client.blue2
@@ -47,6 +52,13 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
             ball_en_x = self.client.ball[0] > 0.4
 
         while True:
+            if self.client.referee["halftime_is_running"]:
+                if halftime:
+                    orientation = 2 * math.pi if rotated else math.pi
+                    rotated = not rotated
+                    halftime = False
+            else:
+                halftime = True
             try:
                 distance_ball = math.sqrt(
                     ((self.client.ball[0] - self.keeper.pose[0]) ** 2) + ((self.client.ball[1] - self.keeper.pose[1]) ** 2))
@@ -56,7 +68,8 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                 print("Erreur gestion_des_robots def : " + str(e))
 
             try:
-
+                if self.client.ball is None:
+                    raise Exception
                 choix_de_defense = 0
 
                 self.keeper.goto((x_placement, self.client.ball[1], orientation), wait=False)
@@ -72,8 +85,6 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                             ((self.client.ball[0] - robot_adv1.pose[0]) ** 2) + ((self.client.ball[1] - robot_adv1.pose[1]) ** 2))
                         distance_adverse_2 = math.sqrt(
                             ((self.client.ball[0] - robot_adv2.pose[0]) ** 2) + ((self.client.ball[1] - robot_adv2.pose[1]) ** 2))
-                        distance_ball = math.sqrt(
-                            ((self.client.ball[0] - self.keeper.pose[0]) ** 2) + ((self.client.ball[1] - self.keeper.pose[1]) ** 2))
                         if ball_en_x:
                             self.keeper.goto((self.client.ball[0], self.client.ball[1], orientation), wait=False)
                             self.keeper.kick(1.0)
@@ -124,10 +135,14 @@ class RotatedGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return -1
 
-if __name__ == "__main__":
-    with rsk.Client() as client:
-        arguments = util.get_parser("").parse_args(sys.argv[1::])
+def main() -> None:
+    arguments = util.get_parser("").parse_args(sys.argv[1::])
+    print(arguments)
+    with rsk.Client(arguments.host, arguments.key) as client:
         if arguments.rotated:
             RotatedGoalKeeperClient(client, arguments.team).defenseur()
         else:
             MainGoalKeeperClient(client, arguments.team).defenseur()
+
+if __name__ == "__main__":
+    main()

@@ -27,3 +27,4 @@
 - speed boost
 - simple goalkeeper
 - advanced goalkeeper
+- goalkeeper V3 + misc

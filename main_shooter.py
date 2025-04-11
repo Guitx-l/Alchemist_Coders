@@ -13,12 +13,13 @@ type array = np.ndarray[2, np.dtype[Any]]
 
 def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     #finding the shooter pos
-    ball_to_goal_vec = goal_pos - ball_pos
-    shooter_pos: array = ball_to_goal_vec * -shooter_offset_scale + goal_pos
-    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vec)
+    ball_to_goal_vector = goal_pos - ball_pos
+    shooter_pos: array = ball_to_goal_vector * -shooter_offset_scale + goal_pos
+    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vector)
 
-def get_alignment(pos1: np.ndarray, pos2: np.ndarray, base: np.ndarray) -> float:
+def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
+
 
 class BaseShooterClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
@@ -72,7 +73,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     def ball_abuse_evade(self) -> None:
         if self.is_inside_timed_circle():
-            if time.time() - self.last_ball_overlap >= 3.0:
+            if time.time() - self.last_ball_overlap >= 2.5:
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
                 pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
@@ -92,28 +93,18 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
         #evading ball_abuse
         self.ball_abuse_evade()
-        """
-        # evade abusive_defense
-        if self.abusive_defense_condition():
-            self.goto_condition((-0.6 * self.goal_sign(), self.shooter.pose[1], self.shooter.pose[2]), condition=self.abusive_defense_condition)
-            self.logger.debug("evading abusive defense")
-            raise rsk.client.ClientError("#expected: abusive_defense evade")
 
-        elif self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.ball):
-            self.logger.debug("evading abusive defense")
-            raise rsk.client.ClientError("#expected: abusive_defense evade")
-        """
         if util.is_inside_court(self.ball):
             if self.ball_behind():
                 ball_vector = Vector2(*(self.shooter.position - self.ball))
                 ball_vector.x *= -1
-                angle = math.atan2(ball_vector.y * -self.goal_sign(), ball_vector.x * -self.goal_sign())
+                angle = angle_of(ball_vector * -self.goal_sign())
                 if angle >= 0:
                     pos = self.ball + (Vector2(-1, -1).normalize() * 0.25 * self.goal_sign())
                 else:
                     pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
                 ball = self.ball
-                self.goto_condition((*pos, angle), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
+                self.goto_condition((*pos, angle_of(-ball_vector)), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):

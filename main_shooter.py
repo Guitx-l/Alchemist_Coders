@@ -6,10 +6,12 @@ import util
 import random
 import numpy as np
 from util import angle_of
-from pygame import Vector2
 from typing import final, Literal, Any, Callable, Sequence
 
-type array = np.ndarray[2, np.dtype[Any]]
+type array = np.ndarray[np.dtype[np.floating]]
+
+def normalized(a: array | Sequence[float]) -> array:
+    return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
 
 def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     #finding the shooter pos
@@ -21,13 +23,13 @@ def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
 def line_intersects_point(line_point1: array, line_point2: array, point: array) -> float:
-    try: return Vector2(*(line_point2 - line_point1)).normalize().cross(Vector2(*(point - line_point1)).normalize())
+    try: return np.dot(normalized(line_point2 - line_point1), normalized(point - line_point1))
     except ValueError: return -2
 
 def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
     # premier degré je sais pas comment ça marche demande à chatgpt
     line_vector = linepoint2 - linepoint1
-    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2) #(center - linepoint1).dot(line_vector) / line_vector.length_squared()
+    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
     t = max(0., min(t, 1))
     return np.linalg.norm((linepoint1[0] + line_vector[0] * t, linepoint1[1] + line_vector[1] * t) - center) <= radius
 
@@ -38,7 +40,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
-        self._goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
+        self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
@@ -87,11 +89,11 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         if self.is_inside_timed_circle():
             if time.time() - self.last_ball_overlap >= 2.5:
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
-                pos = Vector2(*(self.shooter.position - self.ball)).normalize() * rsk.constants.timed_circle_radius + self.shooter.position
+                pos = normalized(self.shooter.position - self.ball) * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
                     t = (pos.x, pos.y, self.shooter.orientation)
                 else:
-                    t = (*Vector2(*(-self.ball)).normalize() * (rsk.constants.timed_circle_radius + 0.1) + self.ball, self.shooter.orientation)
+                    t = (*normalized(-self.ball) * (rsk.constants.timed_circle_radius + 0.05) + self.ball, self.shooter.orientation)
                 self.goto_condition(t, self.is_inside_timed_circle)
                 self.last_ball_overlap = time.time()
         else:
@@ -99,11 +101,11 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     @property
     def goal_pos(self) -> array:
-        i = 0
-        while line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05) and i < 3:
-            self._goal_pos[1] = random.random() * 0.6 - 0.3
-            i += 1
-        return self._goal_pos
+       for i in range(3):
+           if line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05):
+               self._goal_pos[1] = random.random() * 0.6 - 0.3
+               break
+       return self._goal_pos
 
     @final
     def update(self) -> None:
@@ -116,15 +118,15 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
         if util.is_inside_court(self.ball):
             if self.ball_behind():
-                ball_vector = Vector2(*(self.shooter.position - self.ball))
-                ball_vector.x *= -1
+                ball_vector = self.shooter.position - self.ball
+                ball_vector[0] *= -1
                 angle = angle_of(ball_vector * -self.goal_sign())
                 if angle >= 0:
-                    pos = self.ball + (Vector2(-1, -1).normalize() * 0.25 * self.goal_sign())
+                    pos = self.ball + (normalized([-1, -1]) * 0.25 * self.goal_sign())
                 else:
-                    pos = self.ball + (Vector2(-1, 1).normalize() * 0.25 * self.goal_sign())
+                    pos = self.ball + (normalized([-1, 1]) * 0.25 * self.goal_sign())
                 ball = self.ball
-                self.goto_condition((*pos, angle_of(-ball_vector)), lambda: Vector2(*(ball - self.ball)).length() < 0.05, raise_exception=True)
+                self.goto_condition((*pos, angle_of(-ball_vector)), lambda: np.linalg.norm(ball - self.ball) < 0.05, raise_exception=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):

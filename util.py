@@ -10,7 +10,7 @@ from typing import Literal, Any, Sequence, Type
 
 init(autoreset=True)
 
-type array = np.ndarray[(2, 1), np.dtype[Any]]
+type array = np.ndarray[np.dtype[np.floating]]
 
 def is_inside_circle(point: array, center: array, radius: float) -> bool:
     return sum((center - point) ** 2) <= radius ** 2

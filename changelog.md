@@ -2,15 +2,15 @@
 - that wierd aah bug (no timed circle entry)
 
 ## TODO:
-- lots of little thingies to adjust & sync
-- coordination between the goalkeeper and the shooter // that too is NOT my primary feature rn 
 
-## WORK IN PROGRESS:
-- better aim system (anticipation & reaction)
+- coordination between the goalkeeper and the shooter // that too is NOT my primary feature rn 
 - the push ball bug
 
-## NOT FULLY RESOLVED/COMPLETELY TESTED:
+## WORK IN PROGRESS:
+- lots of little thingies to adjust & sync
 
+## NOT FULLY RESOLVED/IMPLEMENTED/COMPLETELY TESTED:
+- better aim system (anticipation & reaction)
 
 ## RESOLVED/FINISHED:
 - shooter going out the court

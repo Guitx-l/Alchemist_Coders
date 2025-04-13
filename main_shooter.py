@@ -7,7 +7,7 @@ import random
 import numpy as np
 from util import angle_of
 from pygame import Vector2
-from typing import final, Literal, Any, Callable
+from typing import final, Literal, Any, Callable, Sequence
 
 type array = np.ndarray[2, np.dtype[Any]]
 
@@ -20,17 +20,29 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
+def line_intersects_point(line_point1: array, line_point2: array, point: array) -> float:
+    try: return Vector2(*(line_point2 - line_point1)).normalize().cross(Vector2(*(point - line_point1)).normalize())
+    except ValueError: return -2
+
+def line_intersects_circle(linepoint1: Vector2, linepoint2: Vector2, center: Vector2, radius: float) -> bool:
+    # premier degré je sais pas comment ça marche demande à chatgpt
+    line_vector = linepoint2 - linepoint1
+    t = (center - linepoint1).dot(line_vector) / line_vector.length_squared()
+    t = max(0., min(t, 1))
+    return (Vector2(linepoint1.x + line_vector.x * t, linepoint1.y + line_vector.y * t) - center).length() <= radius
+
+
 
 class BaseShooterClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
-        self.goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
+        self._goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
-        self.goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
+        self._goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {np.around(self.goal_pos[1], 3)}")
 
     def startup(self) -> None:
@@ -84,6 +96,12 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                 self.last_ball_overlap = time.time()
         else:
             self.last_ball_overlap = time.time()
+
+    @property
+    def goal_pos(self) -> array:
+        while line_intersects_circle(Vector2(*self.ball), Vector2(*self._goal_pos), Vector2(*self.get_opposing_defender().position), rsk.constants.robot_radius + 0.05):
+            self._goal_pos[1] = random.random() * 0.6 - 0.3
+        return self._goal_pos
 
     @final
     def update(self) -> None:

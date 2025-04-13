@@ -24,12 +24,12 @@ def line_intersects_point(line_point1: array, line_point2: array, point: array) 
     try: return Vector2(*(line_point2 - line_point1)).normalize().cross(Vector2(*(point - line_point1)).normalize())
     except ValueError: return -2
 
-def line_intersects_circle(linepoint1: Vector2, linepoint2: Vector2, center: Vector2, radius: float) -> bool:
+def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
     # premier degré je sais pas comment ça marche demande à chatgpt
     line_vector = linepoint2 - linepoint1
-    t = (center - linepoint1).dot(line_vector) / line_vector.length_squared()
+    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2) #(center - linepoint1).dot(line_vector) / line_vector.length_squared()
     t = max(0., min(t, 1))
-    return (Vector2(linepoint1.x + line_vector.x * t, linepoint1.y + line_vector.y * t) - center).length() <= radius
+    return np.linalg.norm((linepoint1[0] + line_vector[0] * t, linepoint1[1] + line_vector[1] * t) - center) <= radius
 
 
 
@@ -99,8 +99,10 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     @property
     def goal_pos(self) -> array:
-        while line_intersects_circle(Vector2(*self.ball), Vector2(*self._goal_pos), Vector2(*self.get_opposing_defender().position), rsk.constants.robot_radius + 0.05):
+        i = 0
+        while line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05) and i < 3:
             self._goal_pos[1] = random.random() * 0.6 - 0.3
+            i += 1
         return self._goal_pos
 
     @final

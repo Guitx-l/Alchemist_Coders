@@ -11,6 +11,7 @@ from typing import final, Literal, Any, Callable, Sequence
 type array = np.ndarray[np.dtype[np.floating]]
 
 def normalized(a: array | Sequence[float]) -> array:
+    """retourne le même truc juste avec une longeur de 1"""
     return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
 
 def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
@@ -23,6 +24,7 @@ def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
 def line_intersects_point(line_point1: array, line_point2: array, point: array) -> float:
+    # regarde tests/shoot_pos pour plus d'explications
     try: return np.dot(normalized(line_point2 - line_point1), normalized(point - line_point1))
     except ValueError: return -2
 
@@ -80,7 +82,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             self.ball_abuse_evade()
         self.shooter.control(0, 0, 0)
         if raise_exception:
-            raise rsk.client.ClientError()
+            raise rsk.client.ClientError("#goto_condition reset")
 
     def abusive_defense_condition(self) -> bool:
         return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
@@ -91,7 +93,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
                 pos = normalized(self.shooter.position - self.ball) * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
-                    t = (pos.x, pos.y, self.shooter.orientation)
+                    t = (pos[0], pos[1], self.shooter.orientation)
                 else:
                     t = (*normalized(-self.ball) * (rsk.constants.timed_circle_radius + 0.05) + self.ball, self.shooter.orientation)
                 self.goto_condition(t, self.is_inside_timed_circle)
@@ -125,8 +127,9 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                     pos = self.ball + (normalized([-1, -1]) * 0.25 * self.goal_sign())
                 else:
                     pos = self.ball + (normalized([-1, 1]) * 0.25 * self.goal_sign())
-                ball = self.ball
-                self.goto_condition((*pos, angle_of(-ball_vector)), lambda: np.linalg.norm(ball - self.ball) < 0.05, raise_exception=True)
+                ball = self.ball.copy()
+                # en gros il va continuer vers pos tant que la balle ne bouge pas de plus de 5cm
+                self.goto_condition((*pos, angle_of(ball - pos)), lambda: np.linalg.norm(ball - self.ball) < 0.05, raise_exception=True)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):

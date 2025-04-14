@@ -160,7 +160,7 @@ def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], ar
             try:
                 client.update()
             except rsk.client.ClientError as e:
-                if arguments.verbose:
+                if arguments.verbose and repr(e)[0] != "#":
                     client.logger.warn(e)
             except KeyboardInterrupt:
                 sys.exit(0)

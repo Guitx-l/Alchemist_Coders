@@ -38,7 +38,7 @@ def in_circle(linepoint1: Vector2, linepoint2: Vector2, center: Vector2, radius:
 # Game loop.
 while is_open:
     # Update.
-    shoot_pos = get_shoot_pos(middle, mouse_pos)
+    shoot_pos = get_shoot_pos(mouse_pos, middle)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_z]:
@@ -58,11 +58,12 @@ while is_open:
     pygame.draw.line(screen, white, middle - (0, 240), middle + (0, 240))
     pygame.draw.line(screen, blue, mouse_pos, (mouse_pos.x, 240))
     pygame.draw.line(screen, green, mouse_pos, (320, mouse_pos.y))
+    #pygame.draw.arc(screen, white, (middle - (50, 50), (100, 100)), 0, -shoot_pos[2], width=3)
 
-    screen.blit(font.render(f"pos: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
-    screen.blit(font.render(f"dot: {Vector2(*(mouse_pos - middle)).normalize().dot(Vector2(1, 0))}", True, white), (0, 12))
+    screen.blit(font.render(f"shooter position: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
+    screen.blit(font.render(f"dot to right line: {Vector2(*(mouse_pos - middle)).normalize().dot(Vector2(1, 0))}", True, white), (0, 12))
     screen.blit(font.render(f"angle: {round(math.degrees(shoot_pos[2]))}", True, white), (0, 24))
-    screen.blit(font.render(f"in_circle: {in_circle(middle, mouse_pos, circle_center, 30)}", True, white), (0, 36))
+    screen.blit(font.render(f"line in circle: {in_circle(middle, mouse_pos, circle_center, 30)}", True, white), (0, 36))
     pygame.display.flip()
     fpsClock.tick(fps)
 

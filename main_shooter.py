@@ -42,7 +42,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
-        self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
+        self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3], dtype=np.floating)
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
@@ -103,10 +103,10 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     @property
     def goal_pos(self) -> array:
-       for i in range(3):
-           if line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05):
-               self._goal_pos[1] = random.random() * 0.6 - 0.3
-               break
+       i = 0
+       while line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05) and i < 5:
+           i += 1
+           self._goal_pos[1] = random.random() * 0.6 - 0.3
        return self._goal_pos
 
     @final

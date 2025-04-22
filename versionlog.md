@@ -4,4 +4,11 @@
 
 # 3.5.1
 - removed pygame dependency
-- tweaked
+- tweaked constans
+
+# 3.5.0
+- buggy aim system
+- added defender
+
+# 3.0.0
+- first tagq

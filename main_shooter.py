@@ -11,7 +11,10 @@ from typing import final, Literal, Any, Callable, Sequence
 type array = np.ndarray[np.dtype[np.floating]]
 
 def normalized(a: array | Sequence[float]) -> array:
-    """retourne le même truc juste avec une longeur de 1"""
+    """
+    retourne le même truc juste avec une longeur de 1
+    genre v(3 ; 0) → v(1 ; 0)
+    """
     return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
 
 def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
@@ -22,11 +25,6 @@ def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float 
 
 def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
-
-def line_intersects_point(line_point1: array, line_point2: array, point: array) -> float:
-    # regarde tests/shoot_pos pour plus d'explications
-    try: return np.dot(normalized(line_point2 - line_point1), normalized(point - line_point1))
-    except ValueError: return -2
 
 def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
     # premier degré je sais pas comment ça marche demande à chatgpt
@@ -42,7 +40,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
-        self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3], dtype=np.floating)
+        self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
         self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
@@ -78,14 +76,12 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             return self.client.robots[opposing_team][1]
 
     def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda: True, raise_exception: bool = False):
+        # regarde le code du goto originel
         while (not self.shooter.goto(target, wait=False)) and condition():
             self.ball_abuse_evade()
         self.shooter.control(0, 0, 0)
         if raise_exception:
             raise rsk.client.ClientError("#goto_condition reset")
-
-    def abusive_defense_condition(self) -> bool:
-        return self.is_inside_defense_zone(self.client.robots[self.shooter.team][2].position) and self.is_inside_defense_zone(self.shooter.position)
 
     def ball_abuse_evade(self) -> None:
         if self.is_inside_timed_circle():

@@ -33,7 +33,7 @@ def in_circle(linepoint1: Vector2, linepoint2: Vector2, center: Vector2, radius:
     line_vector = linepoint2 - linepoint1
     t = (center - linepoint1).dot(line_vector) / line_vector.length_squared()
     t = max(0., min(t, 1))
-    return (Vector2(linepoint1.x + line_vector.x * t, linepoint1.y + line_vector.y * t) - center).length() <= radius
+    return Vector2(line_vector * t - center + linepoint1).length() <= radius
 
 # Game loop.
 while is_open:

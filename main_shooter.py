@@ -31,7 +31,7 @@ def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, 
     line_vector = linepoint2 - linepoint1
     t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
     t = max(0., min(t, 1))
-    return np.linalg.norm((linepoint1[0] + line_vector[0] * t, linepoint1[1] + line_vector[1] * t) - center) <= radius
+    return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
 
 
 
@@ -64,17 +64,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             return self.ball[0] < self.shooter.position[0]
         return self.ball[0] > self.shooter.position[0]
 
-    def get_opposing_defender(self) -> rsk.client.ClientRobot:
-        opposing_team: str = "blue" if self.shooter.team == "green" else "green"
-        if self.goal_sign() == 1:
-            if self.client.robots[opposing_team][1].position[0] < self.client.robots[opposing_team][2].position[0]:
-                return self.client.robots[opposing_team][2]
-            return self.client.robots[opposing_team][1]
-        else:
-            if self.client.robots[opposing_team][1].position[0] > self.client.robots[opposing_team][2].position[0]:
-                return self.client.robots[opposing_team][2]
-            return self.client.robots[opposing_team][1]
-
     def goto_condition(self, target: Any, condition: Callable[[], bool] = lambda: True, raise_exception: bool = False):
         # regarde le code du goto originel
         while (not self.shooter.goto(target, wait=False)) and condition():
@@ -85,7 +74,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     def ball_abuse_evade(self) -> None:
         if self.is_inside_timed_circle():
-            if time.time() - self.last_ball_overlap >= 2.5:
+            if time.time() - self.last_ball_overlap > 2.5:
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
                 pos = normalized(self.shooter.position - self.ball) * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
@@ -100,7 +89,9 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
     @property
     def goal_pos(self) -> array:
        i = 0
-       while line_intersects_circle(self.ball, self._goal_pos, self.get_opposing_defender().position, rsk.constants.robot_radius + 0.05) and i < 5:
+       opp_robot_1 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][1]
+       opp_robot_2 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][2]
+       while (line_intersects_circle(self.ball, self._goal_pos, opp_robot_1, 0.125) or line_intersects_circle(self.ball, self._goal_pos, opp_robot_2, 0.125)) and i < 5:
            i += 1
            self._goal_pos[1] = random.random() * 0.6 - 0.3
        return self._goal_pos

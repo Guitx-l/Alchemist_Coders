@@ -1,3 +1,7 @@
+# 4.0.1
+- aim system now takes into account both opponents
+- restructure of project
+
 # 4.0.0
 - rollback of Guilhem's defender
 - aim system fix

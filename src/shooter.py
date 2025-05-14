@@ -5,33 +5,11 @@ import math
 import util
 import random
 import numpy as np
-from util import angle_of
-from typing import final, Literal, Any, Callable, Sequence
+from util import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position
+from typing import Literal, Any, Callable, Sequence
 
 type array = np.ndarray[np.dtype[np.floating]]
 
-def normalized(a: array | Sequence[float]) -> array:
-    """
-    retourne le même truc juste avec une longeur de 1
-    genre v(3 ; 0) → v(1 ; 0)
-    """
-    return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
-
-def get_shoot_pos(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
-    #finding the shooter pos
-    ball_to_goal_vector = goal_pos - ball_pos
-    shooter_pos: array = ball_to_goal_vector * -shooter_offset_scale + goal_pos
-    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vector)
-
-def get_alignment(pos1: array, pos2: array, base: array) -> float:
-    return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
-
-def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
-    # premier degré je sais pas comment ça marche demande à chatgpt
-    line_vector = linepoint2 - linepoint1
-    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
-    t = max(0., min(t, 1))
-    return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
 
 
 
@@ -100,7 +78,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
            self._goal_pos[1] = goal_y
        return self._goal_pos
 
-    @final
     def update(self) -> None:
         if self.client.ball is None:
             raise rsk.client.ClientError("#expected: ball is none")
@@ -124,9 +101,9 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
             if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
-                target = get_shoot_pos(self.goal_pos, self.ball, 1.2)
+                target = get_shoot_position(self.goal_pos, self.ball, 1.2)
             else:
-                target = get_shoot_pos(self.goal_pos, self.ball, 1.)
+                target = get_shoot_position(self.goal_pos, self.ball, 1.)
             if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
                 self.kick()
 

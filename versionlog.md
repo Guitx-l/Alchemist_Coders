@@ -1,6 +1,7 @@
-# 4.0.1
+# 4.1.0
 - aim system now takes into account both opponents
 - restructure of project
+- added documentation for most methods
 
 # 4.0.0
 - rollback of Guilhem's defender

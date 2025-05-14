@@ -13,35 +13,101 @@ init(autoreset=True)
 type array = np.ndarray[np.dtype[np.floating]]
 
 def is_inside_circle(point: array, center: array, radius: float) -> bool:
+    """
+    :param point: point to be checked
+    :param center: center of the circle (x,y)
+    :param radius: radius of the circle
+    :return: True if point is in the circle, else False
+    """
     return sum((center - point) ** 2) <= radius ** 2
 
 
-def is_inside_rect(point: Sequence[float], bottomleft: Sequence[float], topright: Sequence[float]) -> bool:
+def is_inside_rect(point: Sequence[float] | array, bottomleft: Sequence[float] | array, topright: Sequence[float] | array) -> bool:
+    """
+    :param point: point to be checked
+    :param bottomleft: bottom left of the rectangle (x,y)
+    :param topright: top right fo the rectangle (x,y)
+    :return: whether point is inside the rect defined by bottomleft and topright
+    """
     return bottomleft[0] <= point[0] <= topright[0] and bottomleft[1] <= point[1] <= topright[1]
 
 
-def is_inside_court(x: Sequence[float]) -> bool:
+def is_inside_court(x: Sequence[float] | array) -> bool:
+    """
+    :param x: the position to be checked
+    :return: whether x is inside the in-game court
+    """
     return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
 
 
-def is_inside_right_zone(x: Sequence[float]) -> bool:
+def is_inside_right_zone(x: Sequence[float] | array) -> bool:
+    """
+    :param x: the position to be checked
+    :return: whether x is inside the right goal zone
+    """
     return x[0] >= rsk.constants.field_length/2 - rsk.constants.defense_area_length and rsk.constants.defense_area(True)[0][1] <= x[1] <= rsk.constants.defense_area(True)[1][1]
 
 
-def is_inside_left_zone(x: Sequence[float]) -> bool:
+def is_inside_left_zone(x: Sequence[float] | array) -> bool:
+    """
+    :param x: the position to be checked
+    :return: whether x is inside the left goal zone
+    """
     return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
 
 
-def angle_of(pos: Sequence[float]) -> float:
+def angle_of(pos: Sequence[float] | array) -> float:
     return math.atan2(pos[1], pos[0])
 
 
+def normalized(a: array | Sequence[float]) -> array:
+    """
+    :param a: Either a numpy array of sequence of two floats (list, tuple...), should represent a vector
+    :return: the same vector but with length 1
+    """
+    return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
+
+def get_shoot_position(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
+    """
+    :param goal_pos: position of the goal (x,y), needs to be a numpy array
+    :param ball_pos: position of the ball (x,y), needs  to be a numpy array
+    :param shooter_offset_scale: scale at which the distance between the goal and the ball is multiplied before being applied
+    :return: a tuple of three floats containing the position and the angle needed to score a goal to goal pos,
+    ready to be used with goto
+    """
+    #finding the shooter pos
+    ball_to_goal_vector = goal_pos - ball_pos
+    shooter_pos: array = ball_to_goal_vector * -shooter_offset_scale + goal_pos
+    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vector)
+
+def get_alignment(pos1: array, pos2: array, base: array) -> float:
+    """
+    :param pos1: position of the first point
+    :param pos2: position of the second point
+    :param base: center position for calculations
+    :return: the angle between the base->pos1 vector minus the base->pos2 vector
+    """
+    return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
+
+def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
+    # premier degré je sais pas comment ça marche demande à chatgpt
+    line_vector = linepoint2 - linepoint1
+    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
+    t = max(0., min(t, 1))
+    return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
+
+
 def get_parser(desc: str) -> argparse.ArgumentParser:
+    """
+    :param desc: description of the parser
+    :return: an argparse parser that can be used to launch more easily the program, run get_parser().print_help()
+    or check the argparse docs for more info
+    """
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-r', '--rotated', action='store_true', help="the game will start with the rotated client if specified")
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
     parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client")
-    parser.add_argument('-k', '--key', type=str, default="", help="key of the client")
+    parser.add_argument('-k', '--key', type=str, default="", help="key of the client, empty by default")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='store_true')
     group.add_argument('-q', '--quiet', action='store_true')
@@ -50,13 +116,24 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
 
 
 class Logger:
-    def __init__(self, name: str, debug: bool, quiet: bool = False, verbose: bool = False):
+    """
+    Simple logger class I made because I did not like the original
+    """
+    def __init__(self, name: str, debug: bool):
+        """
+        :param name: name of the logger
+        :param debug: if True, will output debug messages
+        """
         self.name = name
         self.enable_debug = debug
-        self.quiet = quiet
-        self.verbose = verbose
 
     def log(self, message: Any, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
+        """
+        Prints a messge to the standard output. Not supposed to be used outside the class but still can
+        :param message: message to be printed
+        :param str_type: type of message (info, debug, warn, error)
+        :param kwargs:  kwargs of print()
+        """
         date = datetime.now().strftime('%H:%M:%S')
         kwargs = {"end": "\n"} | kwargs
         color = Fore.WHITE
@@ -73,63 +150,121 @@ class Logger:
             type = "ERROR"
         print(f"[{color}{type}{reset}] [{Fore.CYAN}{self.name}{reset}] ({Fore.LIGHTBLACK_EX}{date}{reset}) - {color}{message}{reset}", **kwargs)
 
-    def info(self, message: Any, verbose: bool | None = None, **kwargs) -> None:
+    def info(self, message: Any, **kwargs) -> None:
+        """
+        Prints a messge to the standard output
+        :param message: message to be printed
+        :param kwargs: kwargs of print()
+        """
         self.log(message, 'info', **kwargs)
 
-    def warn(self, message: Any, verbose: bool | None = None, **kwargs) -> None:
+    def warn(self, message: Any, **kwargs) -> None:
+        """
+        Prints a messge to the standard output
+        :param message: message to be printed
+        :param kwargs: kwargs of print()
+        """
         self.log(message, 'warn', **kwargs)
 
-    def error(self, message: Any, verbose: bool | None = None, **kwargs) -> None:
+    def error(self, message: Any, **kwargs) -> None:
+        """
+        Prints a messge to the standard output
+        :param message: message to be printed
+        :param kwargs: kwargs of print()
+        """
         self.log(message, 'error', **kwargs)
 
-    def debug(self, message: Any, verbose: bool | None = None, **kwargs) -> None:
+    def debug(self, message: Any, **kwargs) -> None:
+        """
+        Prints a messge to the standard output
+        :param message: message to be printed
+        :param kwargs: kwargs of print()
+        """
         if self.enable_debug:
             self.log(message, 'debug', **kwargs)
 
 
 
 class BaseClient(abc.ABC):
+    """
+    Top of the class hierarchy
+    Contains common code for all clients and abstract methods to be overridden by subclasses
+    Provides an interface for all clients classes
+    """
     @abc.abstractmethod
-    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
+    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
         self.client = client
         self.logger: Logger = Logger(self.__class__.__name__, True)
         self.referee: dict = self.client.referee
 
     @abc.abstractmethod
     def goal_sign(self) -> Literal[1, -1]:
-        pass
+        """
+        :return: 1 if this robot should score to the right part of the court, else -1
+        """
 
     @abc.abstractmethod
     def update(self) -> None:
-        pass
+        """
+        main method of the client, should be called inside a while loop
+        """
 
     @abc.abstractmethod
     def startup(self) -> None:
-        pass
+        """
+        should be called everytime the client starts activity
+        """
 
     @abc.abstractmethod
     def on_pause(self) -> None:
-        pass
+        """
+        should be called everytime the game is paused
+        """
 
     @property
     def ball(self) -> array:
+        """
+        provides easy access to the ball, may raise a rsk.client.CLientError if the ball cannot be found
+        :return: the position of the ball
+        """
         if self.client.ball is None:
             raise rsk.client.ClientError("#ball is none")
         return self.client.ball
 
     def is_inside_defense_zone(self, pos: Sequence[float]) -> bool:
+        """
+        Uses the goal_sign() method to know if a point is inside the client's defense zone
+        :param pos: position of the point to be checked
+        :return: True if the point is inside the defense zone else False
+        """
         if self.goal_sign() == 1:
             return is_inside_left_zone(pos)
         return is_inside_right_zone(pos)
 
     def faces_ball(self, robot: rsk.client.ClientRobot, threshold: int = 10) -> bool:
+        """
+        Takes in a robot and a threshold and returns wether the robot is pointing at the ball
+        :param robot: robot object to be used for calculations
+        :param threshold: margin of error in degrees, default is 10, meaning that this function still returns True
+            if there is a difference of 10° or less between the ball and the robot
+        :return: True if the robot is in front of the ball within the given threshold else False
+        """
         ball_angle: int = (round(math.degrees(angle_of(self.ball - robot.position))) + 360) % 360
-        shooter_angle = round(math.degrees(robot.orientation)) % 360
-        return -threshold <= shooter_angle - ball_angle <= threshold
+        shooter_angle: int = round(math.degrees(robot.orientation)) % 360
+        return -abs(threshold) <= shooter_angle - ball_angle <= abs(threshold)
 
 
 
 def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], args: list[str] | None = None):
+    """
+    Takes two classes NOT OBJECTS and runs them automatically without any further intervention, even during the halftime
+    Creates a new client and deletes the previous during each halftime (if there are more than one)
+    :param MainClass: First class to run, unless the --rotated option is added in args
+    :param RotatedClass: Second class to run, unless the --rotated option is added in args, can be the same class as
+        MainClass if the user only needs one class
+    :param args: arguments used by the parser specified in get_parser(), the function takes arguments directly from sys.argv if this argument is not specified
+    :return:
+    """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     logger = Logger("client_loader", True)
     logger.info(f"args: {arguments}")

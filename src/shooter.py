@@ -91,9 +91,13 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
        i = 0
        opp_robot_1 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][1]
        opp_robot_2 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][2]
+       goal_y = None
        while (line_intersects_circle(self.ball, self._goal_pos, opp_robot_1, 0.125) or line_intersects_circle(self.ball, self._goal_pos, opp_robot_2, 0.125)) and i < 5:
            i += 1
-           self._goal_pos[1] = random.random() * 0.6 - 0.3
+           goal_y = random.random() * 0.6 - 0.3
+
+       if goal_y is not None:
+           self._goal_pos[1] = goal_y
        return self._goal_pos
 
     @final

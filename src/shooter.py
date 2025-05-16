@@ -6,10 +6,9 @@ import util
 import random
 import numpy as np
 from util import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position
-from typing import Literal, Any, Callable, Sequence
+from typing import Literal, Any, Callable
 
 type array = np.ndarray[np.dtype[np.floating]]
-
 
 
 

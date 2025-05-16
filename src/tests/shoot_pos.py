@@ -62,7 +62,7 @@ while is_open:
 
     screen.blit(font.render(f"shooter position: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
     screen.blit(font.render(f"dot to right line: {Vector2(*(mouse_pos - middle)).normalize().dot(Vector2(1, 0))}", True, white), (0, 12))
-    screen.blit(font.render(f"angle: {round(math.degrees(shoot_pos[2]))}", True, white), (0, 24))
+    screen.blit(font.render(f"angle: {-round(math.degrees(shoot_pos[2]))}", True, white), (0, 24))
     screen.blit(font.render(f"line in circle: {in_circle(middle, mouse_pos, circle_center, 30)}", True, white), (0, 36))
     pygame.display.flip()
     fpsClock.tick(fps)

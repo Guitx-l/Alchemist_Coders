@@ -57,6 +57,10 @@ def is_inside_left_zone(x: Sequence[float] | array) -> bool:
 
 
 def angle_of(pos: Sequence[float] | array) -> float:
+    """
+    :param pos: Vector2-like object (numpy array, list, tuple...)
+    :return: the angle of pos, between -pi and +pi
+    """
     return math.atan2(pos[1], pos[0])
 
 
@@ -73,7 +77,7 @@ def get_shoot_position(goal_pos: array, ball_pos: array, shooter_offset_scale: f
     :param ball_pos: position of the ball (x,y), needs  to be a numpy array
     :param shooter_offset_scale: scale at which the distance between the goal and the ball is multiplied before being applied
     :return: a tuple of three floats containing the position and the angle needed to score a goal to goal pos,
-    ready to be used with goto
+        ready to be used with goto()
     """
     #finding the shooter pos
     ball_to_goal_vector = goal_pos - ball_pos
@@ -85,7 +89,7 @@ def get_alignment(pos1: array, pos2: array, base: array) -> float:
     :param pos1: position of the first point
     :param pos2: position of the second point
     :param base: center position for calculations
-    :return: the angle between the base->pos1 vector minus the base->pos2 vector
+    :return: the angle between the base->pos1 vector minus the angle of the base->pos2 vector
     """
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
@@ -246,7 +250,7 @@ class BaseClient(abc.ABC):
         Takes in a robot and a threshold and returns wether the robot is pointing at the ball
         :param robot: robot object to be used for calculations
         :param threshold: margin of error in degrees, default is 10, meaning that this function still returns True
-            if there is a difference of 10° or less between the ball and the robot
+            if there is a difference of 10° or less between tha angles of the ball and the robot
         :return: True if the robot is in front of the ball within the given threshold else False
         """
         ball_angle: int = (round(math.degrees(angle_of(self.ball - robot.position))) + 360) % 360
@@ -257,7 +261,7 @@ class BaseClient(abc.ABC):
 
 def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], args: list[str] | None = None):
     """
-    Takes two classes NOT OBJECTS and runs them automatically without any further intervention, even during the halftime
+    Takes two classes NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
     Creates a new client and deletes the previous during each halftime (if there are more than one)
     :param MainClass: First class to run, unless the --rotated option is added in args
     :param RotatedClass: Second class to run, unless the --rotated option is added in args, can be the same class as

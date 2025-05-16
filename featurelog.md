@@ -3,7 +3,7 @@
 
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
-
+- REAL goalkeeper (I only have two weeks left I'm COOKED)
 
 ## WORK IN PROGRESS:
 - lots of little thingies to adjust & sync

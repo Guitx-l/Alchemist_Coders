@@ -49,7 +49,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         if raise_exception:
             raise rsk.client.ClientError("#goto_condition reset")
 
-    def ball_abuse_evade(self) -> None:
+    def ball_abuse_evade(self) -> bool:
         if self.is_inside_timed_circle():
             if time.time() - self.last_ball_overlap > 2.5:
                 self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
@@ -58,23 +58,31 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                     t = (pos[0], pos[1], self.shooter.orientation)
                 else:
                     t = (*normalized(-self.ball) * (rsk.constants.timed_circle_radius + 0.05) + self.ball, self.shooter.orientation)
-                self.goto_condition(t, self.is_inside_timed_circle)
                 self.last_ball_overlap = time.time()
+                self.shooter.goto(t, wait=False)
+                return True
         else:
             self.last_ball_overlap = time.time()
+        return False
 
     @property
     def goal_pos(self) -> array:
        i = 0
        opp_robot_1 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][1]
        opp_robot_2 = self.client.robots["blue" if self.shooter.team == "green" else "blue"][2]
-       goal_y = None
-       while (line_intersects_circle(self.ball, self._goal_pos, opp_robot_1, 0.125) or line_intersects_circle(self.ball, self._goal_pos, opp_robot_2, 0.125)) and i < 5:
-           i += 1
-           goal_y = random.random() * 0.6 - 0.3
+       new_goal_pos = self._goal_pos.copy()
+       modified = False
 
-       if goal_y is not None:
-           self._goal_pos[1] = goal_y
+       while (line_intersects_circle(self.ball, new_goal_pos, opp_robot_1.position, 0.125) or line_intersects_circle(self.ball, new_goal_pos, opp_robot_2.position, 0.125)) and i < 20:
+           i += 1
+           new_goal_pos[1] = random.random() * 0.6 - 0.3
+           modified = True
+
+
+       if i == 20:
+           self.logger.debug(f"Could not find a trajectory after {i} attemps")
+       if modified:
+           self._goal_pos[1] = new_goal_pos[1]
        return self._goal_pos
 
     def update(self) -> None:
@@ -83,9 +91,10 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         target = self.shooter.pose
 
         #evading ball_abuse
-        self.ball_abuse_evade()
+        if self.ball_abuse_evade():
+           return
 
-        if util.is_inside_court(self.ball):
+        elif util.is_inside_court(self.ball):
             if self.ball_behind():
                 ball_vector = self.shooter.position - self.ball
                 ball_vector[0] *= -1
@@ -94,12 +103,10 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                     pos = self.ball + (normalized([-1, -1]) * 0.25 * self.goal_sign())
                 else:
                     pos = self.ball + (normalized([-1, 1]) * 0.25 * self.goal_sign())
-                ball = self.ball.copy()
-                # en gros il va continuer vers pos tant que la balle ne bouge pas de plus de 5cm
-                self.goto_condition((*pos, angle_of(ball - pos)), lambda: np.linalg.norm(ball - self.ball) < 0.05, raise_exception=True)
+                self.shooter.goto((*pos, angle_of(self.ball - pos)), wait=False)
 
             # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-            if math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
+            elif math.degrees(get_alignment(self.shooter.position, self.ball, self.goal_pos)) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
                 target = get_shoot_position(self.goal_pos, self.ball, 1.2)
             else:
                 target = get_shoot_position(self.goal_pos, self.ball, 1.)

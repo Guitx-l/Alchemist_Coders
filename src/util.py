@@ -19,7 +19,7 @@ def is_inside_circle(point: array, center: array, radius: float) -> bool:
     :param radius: radius of the circle
     :return: True if point is in the circle, else False
     """
-    return sum((center - point) ** 2) <= radius ** 2
+    return np.linalg.norm(center - point) <= radius
 
 
 def is_inside_rect(point: Sequence[float] | array, bottomleft: Sequence[float] | array, topright: Sequence[float] | array) -> bool:
@@ -94,7 +94,14 @@ def get_alignment(pos1: array, pos2: array, base: array) -> float:
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
 def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, radius: float) -> bool:
-    # premier degré je sais pas comment ça marche demande à chatgpt
+    """
+    Checkes the collision between a line and a circle
+    :param linepoint1: first point of the line, must be a numpy array
+    :param linepoint2: second point of the line, must be a numpy array
+    :param center: center of the circle
+    :param radius: radius of the circle
+    :return: Whether the segment between linepoint1 and linepoint2 intersects with the circle defined by center and radius
+    """
     line_vector = linepoint2 - linepoint1
     t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
     t = max(0., min(t, 1))
@@ -306,4 +313,4 @@ def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], ar
 
 
 if __name__ == "__main__":
-    pass
+    print(line_intersects_circle(np.array([0, 0]), np.array((0.92, -0.084)), np.array([1, 0]), 0.09))

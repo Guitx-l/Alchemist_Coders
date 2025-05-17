@@ -1,3 +1,7 @@
+# 4.1.1
+- aim system actually works
+- removed goto_condition in evade_ball_abuse
+
 # 4.1.0
 - aim system now takes into account both opponents
 - restructure of project

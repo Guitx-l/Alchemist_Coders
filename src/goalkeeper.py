@@ -65,7 +65,7 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                 ball_en_x = distance_ball < 0.6
 
             except Exception as e:
-                print("Erreur gestion_des_robots def : " + str(e))
+                pass#print("Erreur gestion_des_robots def : " + str(e))
 
             try:
                 if self.client.ball is None:
@@ -114,8 +114,8 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                         self.keeper.goto((self.client.ball[0] - 1, self.client.ball[1] - 1, orientation), wait=True)
                         self.keeper.kick(1.0)
             except Exception as e:
-                print("Erreur défenseur :", e)
-            time.sleep(0.1)  # Pour éviter une boucle infinie trop rapide
+                pass#print("Erreur défenseur :", e)
+            #time.sleep(0.1)  # Pour éviter une boucle infinie trop rapide
 
     @final
     def update(self) -> None:

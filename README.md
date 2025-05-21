@@ -1,8 +1,8 @@
-<h1 style="text-align: center">Alchemist Coders</h1>
+<h1 style="text-align: center" align="center">Alchemist Coders</h1>
 
-<p style="text-align: center; font-style: italic">L'esprit du jeu, l'alchimie du code et de la stratégie</p>
+<p style="text-align: center; font-style: italic" align="center">L'esprit du jeu, l'alchimie du code et de la stratégie</p>
 
-<p style="text-align: center">
+<p style="text-align: center" align="center">
 <img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/ffrob.jpg" width=150>
 <img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/logo-kastler.png" width=150>
 <img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/robocup-junior.jpg" width=150>

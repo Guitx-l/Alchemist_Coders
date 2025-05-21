@@ -2,7 +2,12 @@
 
 <p style="text-align: center; font-style: italic">L'esprit du jeu, l'alchimie du code et de la stratégie</p>
 
-<img src="https://raw.githubusercontent.com/Jonathan-Mamba/Alchemist_Coders/refs/heads/main/media/ffrob.jpg">
+<p style="text-align: center">
+<img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/ffrob.jpg" width=150>
+<img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/logo-kastler.png" width=150>
+<img src="https://raw.githubusercontent.com/Guitx-l/Alchemist_Coders/refs/heads/main/media/robocup-junior.jpg" width=150>
+
+</p>
 
 <p>
 Nous sommes, avec Botbusters, les équipes représentant le lycée <a href="https://lyceekastler.fr">Alfred Kastler</a> 

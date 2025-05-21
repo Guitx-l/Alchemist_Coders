@@ -1,8 +1,17 @@
-# Alchemist Coders
+<h1 style="text-align: center">Alchemist Coders</h1>
 
-Simulateur 
+<p style="text-align: center; font-style: italic">L'esprit du jeu, l'alchimie du code et de la stratégie</p>
 
-py -m rsk.game_controller -s
+<img src="https://raw.githubusercontent.com/Jonathan-Mamba/Alchemist_Coders/refs/heads/main/media/ffrob.jpg">
+
+<p>
+Nous sommes, avec Botbusters, les équipes représentant le lycée <a href="https://lyceekastler.fr">Alfred Kastler</a> 
+dans la <a href="https://www.robocup.fr/qu-est-ce-que-c-est">RoboCup Junior</a> en ligue <a href="https://www.robocup.fr/about-3">SCT</a>.
+Notre équipe est composée de <a href="https://github.com/Guitx-l">Guitx</a> et de <a href="https://github.com/Jonathan-Mamba">Mamba</a>.
+Si vous voulez nous soutenir nous avons <a href="about:blank">une cagnotte</a>.
+</p>
+
+# Installation 
 
 # Documentation
 
@@ -25,20 +34,12 @@ Installation/Mise à jour robot-soccer-kitdu package : fichier compatible window
 
 driver rsk : https://github.com/robot-soccer-kit/robot-soccer-kit/tree/master/rsk
 
-# date rsk 
-robocup académique
-Jeudi 10 avril
+# Nos résultats
 
-évènnement bonus
-Samedi 29 Mars
-
-robocup nationale
-Samedi 31 mars 
-Dimanche 1 Juin
-
-robocup europe
-Italie 12 <-> 15 juin
+|                              compétition                               |            date            |  classement  |
+|:----------------------------------------------------------------------:|:--------------------------:|:------------:|
+| [Robocup Académique](https://competition.robot-soccer-kit.com/team/1)  |         10/04/2025         |     2eme     |
+|  [Robocup Nationale](https://competition.robot-soccer-kit.com/team/3)  |  31/05/2025 -> 01/06/2025  |      X       |
+| [Robocup Européenne](https://competition.robot-soccer-kit.com/team/4)  |  04/06/2025 -> 07/06/2025  |      X       |
 
 
-robocup monde
-Bresil 15 au 21 juillet

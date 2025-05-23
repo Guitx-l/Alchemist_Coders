@@ -6,7 +6,7 @@ import argparse
 import numpy as np
 from colorama import Fore, init
 from datetime import datetime
-from typing import Literal, Any, Sequence, Type
+from typing import Literal, Any, Sequence, Callable
 
 init(autoreset=True)
 
@@ -69,7 +69,7 @@ def normalized(a: array | Sequence[float]) -> array:
     :param a: Either a numpy array of sequence of two floats (list, tuple...), should represent a vector
     :return: the same vector but with length 1
     """
-    return a / np.linalg.norm(a) if isinstance(a, np.ndarray) else np.array(a) / np.linalg.norm(a)
+    return np.array(a) / np.linalg.norm(a)
 
 def get_shoot_position(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     """
@@ -103,8 +103,8 @@ def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, 
     :return: Whether the segment between linepoint1 and linepoint2 intersects with the circle defined by center and radius
     """
     line_vector = linepoint2 - linepoint1
-    t = np.dot(center - linepoint1, line_vector) / (line_vector[0] ** 2 + line_vector[1] ** 2)
-    t = max(0., min(t, 1))
+    t = np.dot(center - linepoint1, line_vector) / np.linalg.norm(line_vector) ** 2
+    t = np.clip(0, 1, t)
     return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
 
 
@@ -266,11 +266,11 @@ class BaseClient(abc.ABC):
 
 
 
-def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], args: list[str] | None = None):
+def start_client(MainClass: Callable[[...], BaseClient], RotatedClass: Callable[[...], BaseClient], args: list[str] | None = None):
     """
-    Takes two classes NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
-    Creates a new client and deletes the previous during each halftime (if there are more than one)
-    :param MainClass: First class to run, unless the --rotated option is added in args
+    Takes two client classes/functions returning a client NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
+    Creates a new client and deletes the previous during each halftime (if there are any)
+    :param MainClass: First class to run, unless the --rotated option is added in arg
     :param RotatedClass: Second class to run, unless the --rotated option is added in args, can be the same class as
         MainClass if the user only needs one class
     :param args: arguments used by the parser specified in get_parser(), the function takes arguments directly from sys.argv if this argument is not specified
@@ -293,8 +293,8 @@ def start_client(MainClass: Type[BaseClient], RotatedClass: Type[BaseClient], ar
                     client = RotatedClass(c, team) if not rotated else MainClass(c, team)
                     logger.info(f"halftime, changing into {client.__class__}")
                     rotated = not rotated
-                    halftime = False
-            else:
+                    halftime = None
+            elif halftime is not None:
                 halftime = True
             if c.referee["game_paused"]:
                 if pause:

@@ -6,13 +6,21 @@ import rsk
 import util
 import math
 from util import array
+from pynput import keyboard
 from typing import Literal, final
+
 
 class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
+        self.listener = keyboard.Listener()
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
         self.last_ball_position: array = np.zeros(2)
+        self.listener.start()
+
+    def on_press(self, key) -> None:
+        if key == keyboard.Key.tab:
+            print(self.ball - self.last_ball_position)
 
     def startup(self) -> None:
         self.logger.info(f"Running {self.__class__}.startup()...")
@@ -22,14 +30,12 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
 
     def get_opposing_shooter(self) -> rsk.client.ClientRobot:
         opposing_team: str = "blue" if self.keeper.team == "green" else "green"
-        if self.goal_sign() == 1:
-            if self.client.robots[opposing_team][1].position[0] < self.client.robots[opposing_team][2].position[0]:
-                return self.client.robots[opposing_team][1]
-            return self.client.robots[opposing_team][2]
-        else:
-            if self.client.robots[opposing_team][1].position[0] > self.client.robots[opposing_team][2].position[0]:
-                return self.client.robots[opposing_team][1]
-            return self.client.robots[opposing_team][2]
+        opp_1 = self.client.robots[opposing_team][1]
+        opp_2 = self.client.robots[opposing_team][2]
+
+        if np.linalg.norm(opp_1.position - self.ball) < np.linalg.norm(opp_2.position - self.ball):
+            return opp_1
+        return opp_2
 
     def defenseur(self):
         orientation = 2 * math.pi if self.goal_sign() == 1 else math.pi
@@ -61,11 +67,12 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                 halftime = True
             try:
                 distance_ball = math.sqrt(
-                    ((self.client.ball[0] - self.keeper.pose[0]) ** 2) + ((self.client.ball[1] - self.keeper.pose[1]) ** 2))
+                    ((self.client.ball[0] - self.keeper.pose[0]) ** 2) + (
+                                (self.client.ball[1] - self.keeper.pose[1]) ** 2))
                 ball_en_x = distance_ball < 0.6
 
             except Exception as e:
-                pass#print("Erreur gestion_des_robots def : " + str(e))
+                pass  #print("Erreur gestion_des_robots def : " + str(e))
 
             try:
                 if self.client.ball is None:
@@ -82,9 +89,11 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                         self.keeper.goto((x_placement, self.client.ball[1], orientation), wait=True)
                     else:
                         distance_adverse_1 = math.sqrt(
-                            ((self.client.ball[0] - robot_adv1.pose[0]) ** 2) + ((self.client.ball[1] - robot_adv1.pose[1]) ** 2))
+                            ((self.client.ball[0] - robot_adv1.pose[0]) ** 2) + (
+                                        (self.client.ball[1] - robot_adv1.pose[1]) ** 2))
                         distance_adverse_2 = math.sqrt(
-                            ((self.client.ball[0] - robot_adv2.pose[0]) ** 2) + ((self.client.ball[1] - robot_adv2.pose[1]) ** 2))
+                            ((self.client.ball[0] - robot_adv2.pose[0]) ** 2) + (
+                                        (self.client.ball[1] - robot_adv2.pose[1]) ** 2))
                         if ball_en_x:
                             self.keeper.goto((self.client.ball[0], self.client.ball[1], orientation), wait=False)
                             self.keeper.kick(1.0)
@@ -114,26 +123,33 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                         self.keeper.goto((self.client.ball[0] - 1, self.client.ball[1] - 1, orientation), wait=True)
                         self.keeper.kick(1.0)
             except Exception as e:
-                pass#print("Erreur défenseur :", e)
+                pass  #print("Erreur défenseur :", e)
             #time.sleep(0.1)  # Pour éviter une boucle infinie trop rapide
 
     @final
     def update(self) -> None:
         if util.is_inside_court(self.ball):
             shooter_pos = self.get_opposing_shooter().position
-            #y_keeper = (self.ball[1] - shooter_pos[1]) / (self.ball[0] - shooter_pos[0]) * (-self.goal_sign() - self.ball[0]) + self.ball[1]
-            self.keeper.goto((-self.goal_sign() * 0.9, self.ball[1], math.pi if self.goal_sign() == -1 else 0), wait=False)
+            y_keeper = (self.ball[1] - shooter_pos[1]) / (self.ball[0] - shooter_pos[0]) * (
+                        -self.goal_sign() - self.ball[0]) + self.ball[1]
+            self.keeper.goto((-self.goal_sign() * 0.9, self.ball[1], math.pi if self.goal_sign() == -1 else 0),
+                             wait=False)
 
             if util.is_inside_circle(self.ball, self.keeper.position, 0.2):
                 self.keeper.kick(1)
+
+            self.last_ball_position = self.ball.copy()
+
 
 class MainGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return 1
 
+
 class RotatedGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return -1
+
 
 def main() -> None:
     arguments = util.get_parser("").parse_args(sys.argv[1::])
@@ -144,5 +160,6 @@ def main() -> None:
         else:
             MainGoalKeeperClient(client, arguments.team).defenseur()
 
+
 if __name__ == "__main__":
-    main()
+    util.start_client(MainGoalKeeperClient, RotatedGoalKeeperClient)

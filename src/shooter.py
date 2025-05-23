@@ -52,7 +52,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
     def ball_abuse_evade(self) -> bool:
         if self.is_inside_timed_circle():
             if time.time() - self.last_ball_overlap > 2.5:
-                #self.logger.debug(f'Avoiding ball_abuse ({round(time.time() - self.last_ball_overlap, 2)})')
                 pos = normalized(self.shooter.position - self.ball) * rsk.constants.timed_circle_radius + self.shooter.position
                 if util.is_inside_court(pos):
                     t = (pos[0], pos[1], self.shooter.orientation)
@@ -120,11 +119,17 @@ class MainShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return 1
 
+    def get_goal_position(self) -> array:
+        return self._goal_pos
+
 
 
 class RotatedShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return -1
+
+    def get_goal_position(self) -> array:
+        return self._goal_pos
 
 
 

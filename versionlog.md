@@ -1,3 +1,7 @@
+# 5.0.0
+- added real goalkeeper
+- 
+
 # 4.1.1
 - aim system actually works
 - removed goto_condition in evade_ball_abuse

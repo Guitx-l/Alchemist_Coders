@@ -1,12 +1,9 @@
 import abc
-import sys
 import time
 import numpy as np
 import rsk
 import util
 import math
-
-from src.tests.shoot_pos import goal_pos
 from util import array
 from typing import Literal
 
@@ -87,15 +84,6 @@ class RotatedGoalKeeperClient(BaseGoalKeeperClient):
     def goal_sign(self) -> Literal[1, -1]:
         return -1
 
-
-def main() -> None:
-    arguments = util.get_parser("").parse_args(sys.argv[1::])
-    print(arguments)
-    with rsk.Client(arguments.host, arguments.key) as client:
-        if arguments.rotated:
-            RotatedGoalKeeperClient(client, arguments.team).defenseur()
-        else:
-            MainGoalKeeperClient(client, arguments.team).defenseur()
 
 
 if __name__ == "__main__":

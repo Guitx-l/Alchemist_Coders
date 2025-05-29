@@ -1,10 +1,15 @@
 import util
 import threading
-from shooter import MainShooterClient, RotatedShooterClient
-from goalkeeper import main as goal_main
+from multi_client import MainMultiClient, RotatedMultiClient
 
 
 
 if __name__ == '__main__':
-    threading.Thread(target=lambda *_: util.start_client(MainShooterClient, RotatedShooterClient)).start()
-    goal_main()
+    threading.Thread(target=util.start_client, args=(
+        (lambda client, team: MainMultiClient(client, team, 1)),
+        (lambda client, team: RotatedMultiClient(client, team, 1))
+    )).start()
+    util.start_client(
+        (lambda client, team: MainMultiClient(client, team, 2)),
+        (lambda client, team: RotatedMultiClient(client, team, 2))
+    )

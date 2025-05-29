@@ -54,7 +54,7 @@ class MainMultiClient(BaseMultiClient):
         return 1
 
 
-class RotatedMultiCLient(BaseMultiClient):
+class RotatedMultiClient(BaseMultiClient):
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue'], number: Literal[1, 2],):
         super().__init__(client, team, number, RotatedShooterClient(client, team), RotatedGoalKeeperClient(client, team))
 

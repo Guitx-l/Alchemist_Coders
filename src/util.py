@@ -267,7 +267,7 @@ class BaseClient(abc.ABC):
 
 
 
-def start_client(MainClass: Callable[[...], BaseClient], RotatedClass: Callable[[...], BaseClient], args: list[str] | None = None):
+def start_client(MainClass: Callable[[rsk.Client, str], BaseClient], RotatedClass: Callable[[rsk.Client, str], BaseClient], args: list[str] | None = None):
     """
     Takes two client classes/functions returning a client NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
     Creates a new client and deletes the previous during each halftime (if there are any)

@@ -3,28 +3,29 @@ import time
 import numpy as np
 import rsk
 import math
-import keyboard
-from pygame import Vector2
+import pynput
 
 
 def angle_of(pos) -> float:
     return math.atan2(pos[1], pos[0])
 
-def line_intersects_point(line_point1, line_point2, point) -> float:
-    try: return Vector2(*(line_point2 - line_point1)).normalize().dot(Vector2(*(point - line_point1)).normalize())
-    except ValueError: return -2
+def on_press(key):
+    with rsk.Client() as client:
+        if key == pynput.keyboard.KeyCode.from_char('q'):
+            client.blue1.control(0, 0, 1)
+        elif key == pynput.keyboard.KeyCode.from_char('d'):
+            client.blue1.control(0, 0, -1)
+            print("DDDDDDD")
+        elif key == pynput.keyboard.Key.space:
+            client.blue1.control(0, 0, 0)
+            print(client.blue1.orientation)
+
 
 def simple_goalkeeper(team: str, rotated: bool = False):
-    with rsk.Client() as client:
-        while True:
-            if keyboard.is_pressed("q"):
-                client.blue1.control(0, 0, 0.1)
-            elif keyboard.is_pressed("d"):
-                client.blue1.control(0, 0, -0.1)
-            elif keyboard.is_pressed("space"):
-                print(line_intersects_point(client.blue1.position, np.array([1, 0]), client.ball))
-                time.sleep(0.2)
-            #print(round(math.degrees(client.blue1.orientation)) % 360, round(Vector2(*(client.ball - client.blue1.position)).length() * 100))
+    listener = pynput.keyboard.Listener(on_press=on_press)
+    listener.start()
+    while True:
+        continue
 
 if __name__ == '__main__':
     simple_goalkeeper("blue")

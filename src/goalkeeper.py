@@ -5,22 +5,18 @@ import numpy as np
 import rsk
 import util
 import math
+
+from src.tests.shoot_pos import goal_pos
 from util import array
-from pynput import keyboard
-from typing import Literal, final
+from typing import Literal
 
 
 class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
-        self.listener = keyboard.Listener()
+        self.last_timestamp = time.time()
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
         self.last_ball_position: array = np.zeros(2)
-        self.listener.start()
-
-    def on_press(self, key) -> None:
-        if key == keyboard.Key.tab:
-            print(self.ball - self.last_ball_position)
 
     def startup(self) -> None:
         self.logger.info(f"Running {self.__class__}.startup()...")
@@ -37,108 +33,49 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
             return opp_1
         return opp_2
 
-    def defenseur(self):
-        orientation = 2 * math.pi if self.goal_sign() == 1 else math.pi
-        halftime = True
-        rotated = self.goal_sign() == -1
-
-        while self.client.ball is None:
-            continue
-        if self.keeper.team == "green":
-            robot_adv1 = self.client.blue1
-            robot_adv2 = self.client.blue2
-        else:
-            robot_adv1 = self.client.green1
-            robot_adv2 = self.client.green2
-        if orientation == 2 * math.pi:
-            x_placement = -0.8
-            ball_en_x = self.client.ball[0] < -0.4
-        else:
-            x_placement = 0.8
-            ball_en_x = self.client.ball[0] > 0.4
-
-        while True:
-            if self.client.referee["halftime_is_running"]:
-                if halftime:
-                    orientation = 2 * math.pi if rotated else math.pi
-                    rotated = not rotated
-                    halftime = False
-            else:
-                halftime = True
-            try:
-                distance_ball = math.sqrt(
-                    ((self.client.ball[0] - self.keeper.pose[0]) ** 2) + (
-                                (self.client.ball[1] - self.keeper.pose[1]) ** 2))
-                ball_en_x = distance_ball < 0.6
-
-            except Exception as e:
-                pass  #print("Erreur gestion_des_robots def : " + str(e))
-
-            try:
-                if self.client.ball is None:
-                    raise Exception
-                choix_de_defense = 0
-
-                self.keeper.goto((x_placement, self.client.ball[1], orientation), wait=False)
-
-                if choix_de_defense == 0:
-
-                    if ball_en_x:
-                        self.keeper.goto((self.client.ball[0], self.client.ball[1], orientation), wait=True)
-                        self.keeper.kick(1.0)
-                        self.keeper.goto((x_placement, self.client.ball[1], orientation), wait=True)
-                    else:
-                        distance_adverse_1 = math.sqrt(
-                            ((self.client.ball[0] - robot_adv1.pose[0]) ** 2) + (
-                                        (self.client.ball[1] - robot_adv1.pose[1]) ** 2))
-                        distance_adverse_2 = math.sqrt(
-                            ((self.client.ball[0] - robot_adv2.pose[0]) ** 2) + (
-                                        (self.client.ball[1] - robot_adv2.pose[1]) ** 2))
-                        if ball_en_x:
-                            self.keeper.goto((self.client.ball[0], self.client.ball[1], orientation), wait=False)
-                            self.keeper.kick(1.0)
-                        else:
-                            if distance_adverse_1 >= distance_adverse_2:
-                                robot_adv_le_plus_proche = robot_adv2
-
-                            else:
-                                robot_adv_le_plus_proche = robot_adv1
-
-                            x_defense = ((0.8) - robot_adv_le_plus_proche.pose[0])
-
-                            angle_adv_en_radian = robot_adv_le_plus_proche.pose[2]
-
-                            y_le_saint_des_saint = (x_defense * math.tan(angle_adv_en_radian)) + \
-                                                   robot_adv_le_plus_proche.pose[1]
-
-                            if y_le_saint_des_saint < 0.3 and y_le_saint_des_saint > -0.3:
-                                self.keeper.goto((x_placement, y_le_saint_des_saint, orientation), wait=True)
-
-                elif choix_de_defense == 1:
-                    self.keeper.goto((x_placement, self.client.ball[1], orientation), wait=True)
-                    if math.sqrt(((self.client.ball[0] - self.keeper.pose[0]) ** 2) + (
-                            (self.client.ball[1] - self.keeper.pose[1]) ** 2)) < 0.1:
-                        self.keeper.kick(1.0)
-                        self.keeper.goto((self.client.ball[0] + 1, self.client.ball[1] + 1, orientation), wait=True)
-                        self.keeper.goto((self.client.ball[0] - 1, self.client.ball[1] - 1, orientation), wait=True)
-                        self.keeper.kick(1.0)
-            except Exception as e:
-                pass  #print("Erreur défenseur :", e)
-            #time.sleep(0.1)  # Pour éviter une boucle infinie trop rapide
-
-    @final
     def update(self) -> None:
-        if util.is_inside_court(self.ball):
-            shooter_pos = self.get_opposing_shooter().position
-            y_keeper = (self.ball[1] - shooter_pos[1]) / (self.ball[0] - shooter_pos[0]) * (
-                        -self.goal_sign() - self.ball[0]) + self.ball[1]
-            self.keeper.goto((-self.goal_sign() * 0.9, self.ball[1], math.pi if self.goal_sign() == -1 else 0),
-                             wait=False)
+        target_x = -0.92 * self.goal_sign()
+        target_y = self.keeper.position[1]
+        strategy = ""
+        if not util.is_inside_court(self.ball):
+            self.keeper.goto(self.keeper.pose)
+            return
 
-            if util.is_inside_circle(self.ball, self.keeper.position, 0.2):
-                self.keeper.kick(1)
+        shooter = self.get_opposing_shooter().pose
+        goal_post_x = -0.92 * self.goal_sign()
 
+        if np.linalg.norm(self.ball - shooter[:2]) > 0.18 and np.linalg.norm(self.ball - self.last_ball_position) > 0.05:
+            ball_vector = self.ball - self.last_ball_position
+            target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
+            strategy = "thales-ball"
+
+        elif self.faces_ball(self.get_opposing_shooter(), 20):
+            target_y = shooter[1] + (math.tan(shooter[2]) * (goal_post_x - shooter[0]))
+            strategy = "tan-shooter"
+
+        elif util.get_alignment(np.array([target_x, target_y]), self.ball, shooter[:2]) < 10:
+            target_y = self.ball[1] + (self.ball[1] - shooter[1]) / (self.ball[0] - shooter[0]) * (goal_post_x - self.ball[0])
+            strategy = "thales-shooter"
+
+
+        if not self.is_inside_defense_zone(self.ball) and self.ball[0] * self.goal_sign() < 0.1 and strategy != "":
+            goal_pos = np.array([target_x, target_y])
+            shoot_pos = shooter[:2] if strategy == "tan-shooter" else self.ball
+            trajectory = shoot_pos - goal_pos
+            new_target =  goal_pos + trajectory * (np.dot(self.keeper.position - goal_pos, trajectory) / np.linalg.norm(trajectory) ** 2)
+            target_x, target_y = new_target
+        else:
+            target_y = np.clip(target_y, -0.25, 0.25)
+
+        self.keeper.goto((target_x, target_y, math.pi if self.goal_sign() == -1 else 0), wait=False)
+
+        if util.is_inside_circle(self.ball, self.keeper.position, 0.2):
+            self.keeper.kick(1)
+
+        if time.time() - self.last_timestamp >= 0.1:
             self.last_ball_position = self.ball.copy()
+            self.last_timestamp = time.time()
+
 
 
 class MainGoalKeeperClient(BaseGoalKeeperClient):

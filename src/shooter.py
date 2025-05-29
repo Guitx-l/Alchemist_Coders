@@ -18,7 +18,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
         self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
-        self._last_kick: float = time.time()
 
     def on_pause(self) -> None:
         self._goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
@@ -29,11 +28,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     def is_inside_timed_circle(self) -> bool:
         return util.is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
-
-    def kick(self, power: float = 1) -> None:
-        if time.time() - self._last_kick > 1:
-            self.shooter.kick(power)
-            self._last_kick = time.time()
 
     def ball_behind(self) -> bool:
         """:returns True if the ball is "behind" the shooter else False"""
@@ -84,7 +78,6 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
     def update(self) -> None:
         target = self.shooter.pose
-
         if not util.is_inside_court(self.ball):
             self.shooter.goto(self.shooter.pose, wait=False)
             return
@@ -109,7 +102,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
         else:
             target = get_shoot_position(self.get_goal_position(), self.ball, 0.8)
         if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
-            self.kick()
+            self.shooter.kick(1)
 
         self.shooter.goto(target, wait=False)
 
@@ -119,17 +112,11 @@ class MainShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return 1
 
-    def get_goal_position(self) -> array:
-        return self._goal_pos
-
 
 
 class RotatedShooterClient(BaseShooterClient):
     def goal_sign(self) -> int:
         return -1
-
-    def get_goal_position(self) -> array:
-        return self._goal_pos
 
 
 

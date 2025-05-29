@@ -14,9 +14,9 @@ type array = np.ndarray[np.dtype[np.floating]]
 
 def is_inside_circle(point: array, center: array, radius: float) -> bool:
     """
-    :param point: point to be checked
-    :param center: center of the circle (x,y)
-    :param radius: radius of the circle
+    :param point: Point to be checked
+    :param center: Center of the circle (x,y)
+    :param radius: Radius of the circle
     :return: True if point is in the circle, else False
     """
     return np.linalg.norm(center - point) <= radius
@@ -24,34 +24,34 @@ def is_inside_circle(point: array, center: array, radius: float) -> bool:
 
 def is_inside_rect(point: Sequence[float] | array, bottomleft: Sequence[float] | array, topright: Sequence[float] | array) -> bool:
     """
-    :param point: point to be checked
-    :param bottomleft: bottom left of the rectangle (x,y)
-    :param topright: top right fo the rectangle (x,y)
-    :return: whether point is inside the rect defined by bottomleft and topright
+    :param point: Point to be checked
+    :param bottomleft: Bottom left of the rectangle (x,y)
+    :param topright: Top right fo the rectangle (x,y)
+    :return: Whether point is inside the rect defined by bottomleft and topright
     """
     return bottomleft[0] <= point[0] <= topright[0] and bottomleft[1] <= point[1] <= topright[1]
 
 
 def is_inside_court(x: Sequence[float] | array) -> bool:
     """
-    :param x: the position to be checked
-    :return: whether x is inside the in-game court
+    :param x: The position to be checked
+    :return: Whether x is inside the in-game court
     """
     return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
 
 
 def is_inside_right_zone(x: Sequence[float] | array) -> bool:
     """
-    :param x: the position to be checked
-    :return: whether x is inside the right goal zone
+    :param x: The position to be checked
+    :return: Whether x is inside the right goal zone
     """
     return x[0] >= rsk.constants.field_length/2 - rsk.constants.defense_area_length and rsk.constants.defense_area(True)[0][1] <= x[1] <= rsk.constants.defense_area(True)[1][1]
 
 
 def is_inside_left_zone(x: Sequence[float] | array) -> bool:
     """
-    :param x: the position to be checked
-    :return: whether x is inside the left goal zone
+    :param x: The position to be checked
+    :return: Whether x is inside the left goal zone
     """
     return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
 
@@ -73,10 +73,10 @@ def normalized(a: array | Sequence[float]) -> array:
 
 def get_shoot_position(goal_pos: array, ball_pos: array, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     """
-    :param goal_pos: position of the goal (x,y), needs to be a numpy array
-    :param ball_pos: position of the ball (x,y), needs  to be a numpy array
-    :param shooter_offset_scale: scale at which the distance between the goal and the ball is multiplied before being applied
-    :return: a tuple of three floats containing the position and the angle needed to score a goal to goal pos,
+    :param goal_pos: Position of the goal (x,y), needs to be a numpy array
+    :param ball_pos: Position of the ball (x,y), needs  to be a numpy array
+    :param shooter_offset_scale: Scale at which the distance between the goal and the ball is multiplied before being applied
+    :return: A tuple of three floats containing the position and the angle needed to score a goal to goal pos,
         ready to be used with goto()
     """
     #finding the shooter pos
@@ -86,10 +86,11 @@ def get_shoot_position(goal_pos: array, ball_pos: array, shooter_offset_scale: f
 
 def get_alignment(pos1: array, pos2: array, base: array) -> float:
     """
-    :param pos1: position of the first point
-    :param pos2: position of the second point
-    :param base: center position for calculations
-    :return: the angle between the base->pos1 vector minus the angle of the base->pos2 vector
+    Takes three positions and returns the aligment rate between the 3.
+    :param pos1: Position of the first point
+    :param pos2: Position of the second point
+    :param base: Center position for calculations
+    :return: The angle between the base->pos1 vector and the base->pos2 vector
     """
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
@@ -313,4 +314,5 @@ def start_client(MainClass: Callable[[...], BaseClient], RotatedClass: Callable[
 
 
 if __name__ == "__main__":
-    print(line_intersects_circle(np.array([0, 0]), np.array((0.92, -0.084)), np.array([1, 0]), 0.09))
+    a, b = np.array([1, 2])
+    print(a, b)

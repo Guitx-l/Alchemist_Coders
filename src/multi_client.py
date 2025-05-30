@@ -11,7 +11,7 @@ def is_shooter(client: rsk.Client, team: str, number: int, ball: util.array, goa
     bot = client.robots[team][number]
     other_bot = client.robots[team][3 - number]
 
-    if -0.46 < ball[0] * goal_sign < 0:
+    if -0.46 <= ball[0] * goal_sign <= 0:
         return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
     elif ball[0] * goal_sign > 0:
         return True

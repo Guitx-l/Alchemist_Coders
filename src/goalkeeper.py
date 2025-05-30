@@ -7,7 +7,6 @@ import util
 import math
 from util import array
 from typing import Literal
-import pynput
 
 class Strategy(enum.Enum):
     NONE = enum.auto()
@@ -27,12 +26,6 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
         self.last_ball_position: array = np.zeros(2)
         self.strategy: Strategy = Strategy.NONE
-        self.listener = pynput.keyboard.Listener(on_press=self.on_press)
-        self.listener.start()
-
-    def on_press(self, key):
-        if key == pynput.keyboard.Key.space:
-            self.logger.debug(self.strategy)
 
     def startup(self) -> None:
         self.logger.info(f"Running {self.__class__}.startup()...")
@@ -102,7 +95,7 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
         if util.is_inside_circle(self.ball, self.keeper.position, 0.15):
             self.keeper.kick(1)
 
-        if time.time() - self.last_timestamp >= 0.1:
+        if time.time() - self.last_timestamp > 0.2:
             self.last_ball_position = self.ball.copy()
             self.last_timestamp = time.time()
 

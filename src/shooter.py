@@ -86,7 +86,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             target = get_shoot_position(self.get_goal_position(), self.ball, 1.2)
         else:
             target = get_shoot_position(self.get_goal_position(), self.ball, 0.8)
-        if util.is_inside_circle(self.shooter.position, self.ball, 0.12):
+        if util.is_inside_circle(self.shooter.position, self.ball, 0.15):
             self.shooter.kick(1)
 
         self.shooter.goto(target, wait=False)

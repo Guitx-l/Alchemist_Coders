@@ -287,7 +287,6 @@ def start_client(MainClass: Callable[..., BaseClient], RotatedClass: Callable[..
         client = MainClass(c, team) if not rotated else RotatedClass(c, team)
         halftime = True
         pause = True
-        client.startup()
         while True:
             if c.referee['halftime_is_running']:
                 if halftime:

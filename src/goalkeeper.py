@@ -19,7 +19,7 @@ class Strategy(enum.Enum):
 
 
 
-class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
+class GoalKeeperClient(util.BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.last_timestamp = time.time()
@@ -59,7 +59,7 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
                 ball_vector = self.ball - self.last_ball_position
                 target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
                 self.strategy = Strategy.THALES_BALL
-            elif self.ball[0] * self.goal_sign() < 0:
+            elif self.ball[0] * self.goal_sign() < 0.35:
                 target_x, target_y = self.ball
                 self.strategy = Strategy.BALL
 
@@ -101,16 +101,5 @@ class BaseGoalKeeperClient(util.BaseClient, abc.ABC):
 
 
 
-class MainGoalKeeperClient(BaseGoalKeeperClient):
-    def goal_sign(self) -> Literal[1, -1]:
-        return 1
-
-
-class RotatedGoalKeeperClient(BaseGoalKeeperClient):
-    def goal_sign(self) -> Literal[1, -1]:
-        return -1
-
-
-
 if __name__ == "__main__":
-    util.start_client(MainGoalKeeperClient, RotatedGoalKeeperClient)
+    util.start_client(GoalKeeperClient)

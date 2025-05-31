@@ -116,10 +116,9 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     or check the argparse docs for more info
     """
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-r', '--rotated', action='store_true', help="the game will start with the rotated client if specified")
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
-    parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client")
-    parser.add_argument('-k', '--key', type=str, default="", help="key of the client, empty by default")
+    parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client, localhost by default")
+    parser.add_argument('-k', '--key', type=str, default="Codeur-3324Alche!", help="key of the client, empty by default")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='store_true')
     group.add_argument('-q', '--quiet', action='store_true')
@@ -208,29 +207,15 @@ class BaseClient(abc.ABC):
         self.client = client
         self.logger: Logger = Logger(self.__class__.__name__, True)
         self.referee: dict = self.client.referee
+        self.team = team
 
-    @abc.abstractmethod
     def goal_sign(self) -> Literal[1, -1]:
-        """
-        :return: 1 if this robot should score to the right part of the court, else -1
-        """
+        return -1 if self.client.referee['teams'][self.team]['x_positive'] else 1
 
     @abc.abstractmethod
     def update(self) -> None:
         """
         main method of the client, should be called inside a while loop
-        """
-
-    @abc.abstractmethod
-    def startup(self) -> None:
-        """
-        should be called everytime the client starts activity
-        """
-
-    @abc.abstractmethod
-    def on_pause(self) -> None:
-        """
-        should be called everytime the game is paused
         """
 
     @property
@@ -267,11 +252,11 @@ class BaseClient(abc.ABC):
 
 
 
-def start_client(MainClass: Callable[..., BaseClient], RotatedClass: Callable[..., BaseClient], args: list[str] | None = None):
+def start_client(ClientClass: Callable[..., BaseClient], args: list[str] | None = None):
     """
     Takes two client classes/functions returning a client NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
     Creates a new client and deletes the previous during each halftime (if there are any)
-    :param MainClass: First class to run, unless the --rotated option is added in arg
+    :param ClientClass: First class to run, unless the --rotated option is added in arg
     :param RotatedClass: Second class to run, unless the --rotated option is added in args, can be the same class as
         MainClass if the user only needs one class
     :param args: arguments used by the parser specified in get_parser(), the function takes arguments directly from sys.argv if this argument is not specified
@@ -281,28 +266,10 @@ def start_client(MainClass: Callable[..., BaseClient], RotatedClass: Callable[..
     logger = Logger("client_loader", True)
     logger.info(f"args: {arguments}")
     team = arguments.team
-    rotated: bool = arguments.rotated
 
     with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel
-        client = MainClass(c, team) if not rotated else RotatedClass(c, team)
-        halftime = True
-        pause = True
+        client = ClientClass(c, team)
         while True:
-            if c.referee['halftime_is_running']:
-                if halftime:
-                    client = RotatedClass(c, team) if not rotated else MainClass(c, team)
-                    logger.info(f"halftime, changing into {client.__class__}")
-                    rotated = not rotated
-                    halftime = None
-            elif halftime is not None:
-                halftime = True
-            if c.referee["game_paused"]:
-                if pause:
-                    client.on_pause()
-                    pause = False
-            else:
-                pause = True
-
             try:
                 client.update()
             except rsk.client.ClientError as e:

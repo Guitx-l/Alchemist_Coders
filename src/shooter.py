@@ -12,19 +12,12 @@ type array = np.ndarray[np.dtype[np.floating]]
 
 
 
-class BaseShooterClient(util.BaseClient, abc.ABC):
+class ShooterClient(util.BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
         self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
-
-    def on_pause(self) -> None:
-        self._goal_pos = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
-        self.logger.info(f"running {self.__class__}.on_pause..., goal pos: {np.around(self.get_goal_position()[1], 3)}")
-
-    def startup(self) -> None:
-        self.logger.info(f"{self.__class__} startup ({str(time.time()).split('.')[1]})")
 
     def is_inside_timed_circle(self) -> bool:
         return util.is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
@@ -59,11 +52,12 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
             modified = False
         if modified:
             self.logger.debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(self._goal_pos[1], 3)} -> {round(new_goal_pos[1], 3)})")
-            self._goal_pos[1] = new_goal_pos[1]
+            self._goal_pos = new_goal_pos
         return self._goal_pos
 
     def update(self) -> None:
         target = self.shooter.pose
+        self._goal_pos[0] = 0.92 * self.goal_sign()
         if not util.is_inside_court(self.ball):
             self.shooter.goto(self.shooter.pose, wait=False)
             return
@@ -93,17 +87,5 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
 
 
 
-class MainShooterClient(BaseShooterClient):
-    def goal_sign(self) -> int:
-        return 1
-
-
-
-class RotatedShooterClient(BaseShooterClient):
-    def goal_sign(self) -> int:
-        return -1
-
-
-
 if __name__ == "__main__":
-    util.start_client(MainShooterClient, RotatedShooterClient)
+    util.start_client(ShooterClient)

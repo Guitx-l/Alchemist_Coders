@@ -6,7 +6,7 @@ import util
 import random
 import numpy as np
 from util import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position
-from typing import Literal, Any, Callable
+from typing import Literal
 
 type array = np.ndarray[np.dtype[np.floating]]
 
@@ -36,7 +36,7 @@ class BaseShooterClient(util.BaseClient, abc.ABC):
                 if util.is_inside_court(pos):
                     t = (pos[0], pos[1], self.shooter.orientation)
                 else:
-                    t = (*normalized(-self.ball) * (rsk.constants.timed_circle_radius + 0.05) + self.ball, self.shooter.orientation)
+                    t = (*(normalized(-self.ball) * 0.3 + self.ball), self.shooter.orientation)
                 self.shooter.goto(t, wait=False)
                 return True
         else:

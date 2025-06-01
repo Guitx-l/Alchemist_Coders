@@ -118,7 +118,7 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
     parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client, localhost by default")
-    parser.add_argument('-k', '--key', type=str, default="Codeur-3324Alche!", help="key of the client, empty by default")
+    parser.add_argument('-k', '--key', type=str, default="", help="key of the client, empty by default")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='store_true')
     group.add_argument('-q', '--quiet', action='store_true')
@@ -205,7 +205,7 @@ class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
         self.client = client
-        self.logger: Logger = Logger(self.__class__.__name__, True)
+        self.logger: Logger = Logger(self.__class__.__name__, False)
         self.referee: dict = self.client.referee
         self.team = team
 

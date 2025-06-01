@@ -5,21 +5,22 @@ from shooter import ShooterClient
 from goalkeeper import GoalKeeperClient
 from typing import Literal
 
-
+def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
+    return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
 def is_shooter(client: rsk.Client, team: str, number: int, ball: util.array, goal_sign: int) -> bool:
     bot = client.robots[team][number]
     other_bot = client.robots[team][3 - number]
 
-    if -0.46 <= ball[0] * goal_sign <= 0.3:
-        return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
-    elif ball[0] * goal_sign > 0:
-        return True
-    return False
+    if not can_play(other_bot, client.referee):
+        return ball[0] * goal_sign > 0
+    return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 
 
-class BaseMultiClient(util.BaseClient):
+
+
+class MultiClient(util.BaseClient):
     def __init__(self,
                  client: rsk.Client,
                  team: Literal['green', 'blue'],

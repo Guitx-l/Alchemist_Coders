@@ -1,17 +1,14 @@
-## DISAPPEARED:
-- that wierd aah bug (no timed circle entry)
-
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
 
 ## WORK IN PROGRESS:
 - lots of little thingies to adjust & sync
 - better documentation
+- shooter rework / that wierd aah bug (no timed circle entry)
 
 ## NOT FULLY RESOLVED/IMPLEMENTED/COMPLETELY TESTED:
 - better aim system (anticipation & reaction)
 - the push ball bug
-- REAL goalkeeper
 
 ## RESOLVED/FINISHED:
 - shooter going out the court
@@ -29,3 +26,4 @@
 - simple goalkeeper
 - advanced goalkeeper
 - goalkeeper V3 + misc
+- REAL goalkeeper

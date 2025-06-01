@@ -59,7 +59,7 @@ class GoalKeeperClient(util.BaseClient):
                 ball_vector = self.ball - self.last_ball_position
                 target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
                 self.strategy = Strategy.THALES_BALL
-            elif self.ball[0] * self.goal_sign() < 0.35:
+            elif self.ball[0] * self.goal_sign() < 0.2:
                 target_x, target_y = self.ball
                 self.strategy = Strategy.BALL
 

@@ -10,13 +10,14 @@ from typing import Literal
 
 type array = np.ndarray[np.dtype[np.floating]]
 
-
+TARGET_FPS = 60
 
 class ShooterClient(util.BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]
         self.last_ball_overlap: float = time.time()
+        self.last_kick = time.time()
         self._goal_pos: array = np.array([rsk.constants.field_length / 2 * self.goal_sign(), random.random() * 0.6 - 0.3])
 
     def is_inside_timed_circle(self) -> bool:
@@ -58,6 +59,10 @@ class ShooterClient(util.BaseClient):
     def update(self) -> None:
         target = self.shooter.pose
         self._goal_pos[0] = 0.92 * self.goal_sign()
+
+        if self.client.referee['game_paused']:
+            self.last_ball_overlap = time.time()
+
         if not util.is_inside_court(self.ball):
             self.shooter.goto(self.shooter.pose, wait=False)
             return
@@ -76,14 +81,17 @@ class ShooterClient(util.BaseClient):
             target = (*pos, angle_of(self.ball - pos))
 
         # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-        elif math.degrees(get_alignment(self.shooter.position, self.ball, self.get_goal_position())) > 10 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
+        elif math.degrees(get_alignment(self.shooter.position, self.ball, self.get_goal_position())) > 25 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
             target = get_shoot_position(self.get_goal_position(), self.ball, 1.2)
         else:
             target = get_shoot_position(self.get_goal_position(), self.ball, 0.8)
-        if util.is_inside_circle(self.shooter.position, self.ball, 0.15):
-            self.shooter.kick(1)
 
         self.shooter.goto(target, wait=False)
+        if util.is_inside_circle(self.shooter.position, self.ball, 0.13):
+            if time.time() - self.last_kick > 1:
+                self.shooter.kick(1)
+                self.last_kick = time.time()
+
 
 
 

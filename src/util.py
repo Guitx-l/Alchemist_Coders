@@ -4,13 +4,26 @@ import sys
 import math
 import argparse
 import numpy as np
-from colorama import Fore, init
-from datetime import datetime
-from typing import Literal, Any, Sequence, Callable
+from logging import Logger
+from typing import Literal, Sequence, Callable
 
-init(autoreset=True)
 
-type array = np.ndarray[np.dtype[np.floating]]
+type array = np.ndarray[tuple[int, ...], np.dtype[np.floating]]
+
+
+def faces_ball(robot: rsk.client.ClientRobot, ball: array, threshold: int = 10) -> bool:
+    """
+    Takes in a robot and a threshold and returns whether the robot is pointing at the ball
+    :param robot: robot object to be used for calculations
+    :param ball: position of the ball
+    :param threshold: margin of error in degrees, default is 10, meaning that this function still returns True
+        if there is a difference of 10° or less between tha angles of the ball and the robot
+    :return: True if the robot is in front of the ball within the given threshold else False
+    """
+    ball_angle: int = (round(math.degrees(angle_of(ball - robot.position))) + 360) % 360
+    shooter_angle: int = round(math.degrees(robot.orientation)) % 360
+    return -abs(threshold) <= shooter_angle - ball_angle <= abs(threshold)
+
 
 def is_inside_circle(point: array, center: array, radius: float) -> bool:
     """
@@ -64,7 +77,7 @@ def angle_of(pos: Sequence[float] | array) -> float:
     return math.atan2(pos[1], pos[0])
 
 
-def normalized(a: array | Sequence[float]) -> array:
+def normalized(a: np.typing.ArrayLike) -> array:
     """
     :param a: Either a numpy array of sequence of two floats (list, tuple...), should represent a vector
     :return: the same vector but with length 1
@@ -105,7 +118,7 @@ def line_intersects_circle(linepoint1: array, linepoint2: array, center: array, 
     """
     line_vector = linepoint2 - linepoint1
     t = np.dot(center - linepoint1, line_vector) / np.linalg.norm(line_vector) ** 2
-    t = np.clip(0, 1, t)
+    t = np.clip(t,0, 1)
     return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
 
 
@@ -126,76 +139,6 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
 
 
 
-class Logger:
-    """
-    Simple logger class I made because I did not like the original
-    """
-    def __init__(self, name: str, debug: bool):
-        """
-        :param name: name of the logger
-        :param debug: if True, will output debug messages
-        """
-        self.name = name
-        self.enable_debug = debug
-
-    def log(self, message: Any, str_type: Literal['info', 'debug', 'warn', 'error', 0, 1, 2, 3] = 'info', **kwargs) -> None:
-        """
-        Prints a messge to the standard output. Not supposed to be used outside the class but still can
-        :param message: message to be printed
-        :param str_type: type of message (info, debug, warn, error)
-        :param kwargs:  kwargs of print()
-        """
-        date = datetime.now().strftime('%H:%M:%S')
-        kwargs = {"end": "\n"} | kwargs
-        color = Fore.WHITE
-        reset = Fore.RESET
-        type: str = "INFO"
-        if str_type in (1, 'debug'):
-            color = Fore.GREEN
-            type = "DEBUG"
-        elif str_type in (2, 'warn'):
-            color = Fore.YELLOW
-            type = "WARNING"
-        elif str_type in (3, 'error'):
-            color = Fore.RED
-            type = "ERROR"
-        print(f"[{color}{type}{reset}] [{Fore.CYAN}{self.name}{reset}] ({Fore.LIGHTBLACK_EX}{date}{reset}) - {color}{message}{reset}", **kwargs)
-
-    def info(self, message: Any, **kwargs) -> None:
-        """
-        Prints a messge to the standard output
-        :param message: message to be printed
-        :param kwargs: kwargs of print()
-        """
-        self.log(message, 'info', **kwargs)
-
-    def warn(self, message: Any, **kwargs) -> None:
-        """
-        Prints a messge to the standard output
-        :param message: message to be printed
-        :param kwargs: kwargs of print()
-        """
-        self.log(message, 'warn', **kwargs)
-
-    def error(self, message: Any, **kwargs) -> None:
-        """
-        Prints a messge to the standard output
-        :param message: message to be printed
-        :param kwargs: kwargs of print()
-        """
-        self.log(message, 'error', **kwargs)
-
-    def debug(self, message: Any, **kwargs) -> None:
-        """
-        Prints a messge to the standard output
-        :param message: message to be printed
-        :param kwargs: kwargs of print()
-        """
-        if self.enable_debug:
-            self.log(message, 'debug', **kwargs)
-
-
-
 class BaseClient(abc.ABC):
     """
     Top of the class hierarchy
@@ -205,7 +148,7 @@ class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
         self.client = client
-        self.logger: Logger = Logger(self.__class__.__name__, False)
+        self.logger: Logger = Logger(self.__class__.__name__)
         self.referee: dict = self.client.referee
         self.team = team
 
@@ -238,32 +181,17 @@ class BaseClient(abc.ABC):
             return is_inside_left_zone(pos)
         return is_inside_right_zone(pos)
 
-    def faces_ball(self, robot: rsk.client.ClientRobot, threshold: int = 10) -> bool:
-        """
-        Takes in a robot and a threshold and returns wether the robot is pointing at the ball
-        :param robot: robot object to be used for calculations
-        :param threshold: margin of error in degrees, default is 10, meaning that this function still returns True
-            if there is a difference of 10° or less between tha angles of the ball and the robot
-        :return: True if the robot is in front of the ball within the given threshold else False
-        """
-        ball_angle: int = (round(math.degrees(angle_of(self.ball - robot.position))) + 360) % 360
-        shooter_angle: int = round(math.degrees(robot.orientation)) % 360
-        return -abs(threshold) <= shooter_angle - ball_angle <= abs(threshold)
 
 
-
-def start_client(ClientClass: Callable[..., BaseClient], args: list[str] | None = None):
+def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], BaseClient], args: list[str] | None = None):
     """
-    Takes two client classes/functions returning a client NOT OBJECTS and runs them automatically without any further intervention, even during the halftime.
-    Creates a new client and deletes the previous during each halftime (if there are any)
-    :param ClientClass: First class to run, unless the --rotated option is added in arg
-    :param RotatedClass: Second class to run, unless the --rotated option is added in args, can be the same class as
-        MainClass if the user only needs one class
+    Takes one class/function/object returning a BaseClient object and runs them automatically without any further intervention, even during the halftime.
+    :param ClientClass: Callable returning BaseClient type object.
     :param args: arguments used by the parser specified in get_parser(), the function takes arguments directly from sys.argv if this argument is not specified
     :return:
     """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
-    logger = Logger("client_loader", True)
+    logger = Logger("client_loader")
     logger.info(f"args: {arguments}")
     team = arguments.team
 

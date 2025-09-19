@@ -5,12 +5,10 @@ import math
 import util
 import random
 import numpy as np
-from util import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position
+from util import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array
 from typing import Literal
 
-type array = np.ndarray[np.dtype[np.floating]]
 
-TARGET_FPS = 60
 
 class ShooterClient(util.BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
@@ -81,7 +79,7 @@ class ShooterClient(util.BaseClient):
             target = (*pos, angle_of(self.ball - pos))
 
         # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-        elif math.degrees(get_alignment(self.shooter.position, self.ball, self.get_goal_position())) > 25 or (self.is_inside_timed_circle() and not self.faces_ball(self.shooter, 15)):
+        elif math.degrees(get_alignment(self.shooter.position, self.ball, self.get_goal_position())) > 25 or (self.is_inside_timed_circle() and not faces_ball(self.shooter, self.ball, 15)):
             target = get_shoot_position(self.get_goal_position(), self.ball, 1.2)
         else:
             target = get_shoot_position(self.get_goal_position(), self.ball, 0.8)
@@ -91,7 +89,6 @@ class ShooterClient(util.BaseClient):
             if time.time() - self.last_kick > 1:
                 self.shooter.kick(1)
                 self.last_kick = time.time()
-
 
 
 

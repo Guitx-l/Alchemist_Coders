@@ -5,7 +5,7 @@ import numpy as np
 import rsk
 import util
 import math
-from util import array
+from util import array, faces_ball
 from typing import Literal
 
 class Strategy(enum.Enum):
@@ -27,12 +27,6 @@ class GoalKeeperClient(util.BaseClient):
         self.last_ball_position: array = np.zeros(2)
         self.strategy: Strategy = Strategy.NONE
 
-    def startup(self) -> None:
-        self.logger.info(f"Running {self.__class__}.startup()...")
-
-    def on_pause(self) -> None:
-        self.logger.info(f"Running {self.__class__}.on_pause()...")
-
     def get_opposing_shooter(self) -> rsk.client.ClientRobot:
         opposing_team: str = "blue" if self.keeper.team == "green" else "green"
         opp_1 = self.client.robots[opposing_team][1]
@@ -53,17 +47,18 @@ class GoalKeeperClient(util.BaseClient):
 
         shooter = self.get_opposing_shooter().pose
         goal_post_x = -0.92 * self.goal_sign()
+        no_shooter = np.linalg.norm(self.ball - shooter[:2]) > 0.18
 
-        if np.linalg.norm(self.ball - shooter[:2]) > 0.18:
-            if np.linalg.norm(self.ball - self.last_ball_position) > 0.05:
-                ball_vector = self.ball - self.last_ball_position
-                target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
-                self.strategy = Strategy.THALES_BALL
-            elif self.ball[0] * self.goal_sign() < 0.2:
-                target_x, target_y = self.ball
-                self.strategy = Strategy.BALL
+        if no_shooter and (np.linalg.norm(self.ball - self.last_ball_position) > 0.05):
+            ball_vector = self.ball - self.last_ball_position
+            target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
+            self.strategy = Strategy.THALES_BALL
+            
+        elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2):
+            target_x, target_y = self.ball
+            self.strategy = Strategy.BALL
 
-        elif self.faces_ball(self.get_opposing_shooter(), 20):
+        elif faces_ball(self.get_opposing_shooter(), self.ball, 20):
             target_y = shooter[1] + (math.tan(shooter[2]) * (goal_post_x - shooter[0]))
             self.strategy = Strategy.TAN_SHOOTER
 

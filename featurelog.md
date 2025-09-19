@@ -1,10 +1,11 @@
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
 
+
 ## WORK IN PROGRESS:
 - lots of little thingies to adjust & sync
-- better documentation
-- shooter rework / that wierd aah bug (no timed circle entry)
+- shooter rework / that weird bug (no timed circle entry)
+- court clogging fix
 
 ## NOT FULLY RESOLVED/IMPLEMENTED/COMPLETELY TESTED:
 - better aim system (anticipation & reaction)
@@ -27,3 +28,4 @@
 - advanced goalkeeper
 - goalkeeper V3 + misc
 - REAL goalkeeper
+- better documentation

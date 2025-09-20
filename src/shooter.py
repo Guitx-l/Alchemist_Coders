@@ -1,4 +1,3 @@
-import abc
 import rsk
 import time
 import math
@@ -37,8 +36,8 @@ class ShooterClient(util.BaseClient):
 
     def get_goal_position(self) -> array:
         i = 0
-        opp_robot_1 = self.client.robots["green" if self.shooter.team == "blue" else "blue"][1]
-        opp_robot_2 = self.client.robots["green" if self.shooter.team == "blue" else "blue"][2]
+        opp_robot_1 = self.client.robots["green" if self.team == "blue" else "blue"][1]
+        opp_robot_2 = self.client.robots["green" if self.team == "bl The pictures don’t really do it justice either, to the human eye there’s a lot more blending between the pixels on CRTs which makes the scan lines less obvious and adds more sense of cohesion ue" else "blue"][2]
         new_goal_pos = self._goal_pos.copy()
         modified = False
 

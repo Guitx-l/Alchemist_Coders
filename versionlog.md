@@ -1,5 +1,7 @@
 # 5.1.1
-
+- reset all the tags for some reason
+- removed colorama and custom logger
+- first try to fix clogging
 
 # 5.1.0
 - ball_behind fix in shooter
@@ -29,5 +31,5 @@
 - buggy aim system
 - added defender
 
-# 3.0.0
+# 3.0.0 (lost)
 - first tag

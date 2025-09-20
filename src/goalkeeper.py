@@ -1,4 +1,3 @@
-import abc
 import enum
 import time
 import numpy as np
@@ -10,10 +9,10 @@ from typing import Literal
 
 class Strategy(enum.Enum):
     NONE = enum.auto()
-    BALL = enum.auto()
+    BALL_RUSH = enum.auto()
     TAN_SHOOTER = enum.auto()
     THALES_SHOOTER = enum.auto()
-    THALES_BALL = enum.auto()
+    BALL_VECTOR = enum.auto()
     BALL_BEHIND = enum.auto()
     PROJECT = enum.auto()
 
@@ -45,35 +44,36 @@ class GoalKeeperClient(util.BaseClient):
             self.keeper.goto(self.keeper.pose)
             return
 
-        shooter = self.get_opposing_shooter().pose
+        opp_shooter = self.get_opposing_shooter().pose
+        team_mate = self.client.robots[self.team][3 - self.keeper.number].position
         goal_post_x = -0.92 * self.goal_sign()
-        no_shooter = np.linalg.norm(self.ball - shooter[:2]) > 0.18
+        no_shooter = np.linalg.norm(self.ball - opp_shooter[:2]) > 0.18
 
         if no_shooter and (np.linalg.norm(self.ball - self.last_ball_position) > 0.05):
             ball_vector = self.ball - self.last_ball_position
             target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
-            self.strategy = Strategy.THALES_BALL
+            self.strategy = Strategy.BALL_VECTOR
             
-        elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2):
+        elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2) and (np.linalg.norm(self.ball - team_mate) < 0.15):
             target_x, target_y = self.ball
-            self.strategy = Strategy.BALL
+            self.strategy = Strategy.BALL_RUSH
 
         elif faces_ball(self.get_opposing_shooter(), self.ball, 20):
-            target_y = shooter[1] + (math.tan(shooter[2]) * (goal_post_x - shooter[0]))
+            target_y = opp_shooter[1] + (math.tan(opp_shooter[2]) * (goal_post_x - opp_shooter[0]))
             self.strategy = Strategy.TAN_SHOOTER
 
-        elif util.get_alignment(np.array([target_x, target_y]), self.ball, shooter[:2]) < 10:
-            target_y = self.ball[1] + (self.ball[1] - shooter[1]) / (self.ball[0] - shooter[0]) * (goal_post_x - self.ball[0])
+        elif util.get_alignment(np.array([target_x, target_y]), self.ball, opp_shooter[:2]) < 10:
+            target_y = self.ball[1] + (self.ball[1] - opp_shooter[1]) / (self.ball[0] - opp_shooter[0]) * (goal_post_x - self.ball[0])
             self.strategy = Strategy.THALES_SHOOTER
 
 
-        if not self.is_inside_defense_zone(self.ball) and self.ball[0] * self.goal_sign() < 0.1 and self.strategy not in (Strategy.NONE, Strategy.BALL):
+        if not self.is_inside_defense_zone(self.ball) and self.ball[0] * self.goal_sign() < 0.1 and self.strategy not in (Strategy.NONE, Strategy.BALL_RUSH):
             goal_pos = np.array([target_x, target_y])
             trajectory = self.ball - goal_pos
             new_target = goal_pos + trajectory * (np.dot(self.keeper.position - goal_pos, trajectory) / np.linalg.norm(trajectory) ** 2)
             target_x, target_y = new_target
             self.strategy = Strategy.PROJECT
-        elif self.strategy != Strategy.BALL:
+        elif self.strategy != Strategy.BALL_RUSH:
             target_y = np.clip(target_y, -0.25, 0.25)
 
         ball_vector = self.keeper.position - self.ball

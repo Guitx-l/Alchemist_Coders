@@ -54,8 +54,9 @@ class GoalKeeperClient(util.BaseClient):
             target_y = self.ball[1] + (ball_vector[1] * (goal_post_x - self.last_ball_position[0]) / ball_vector[0])
             self.strategy = Strategy.BALL_VECTOR
             
-        elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2) and (np.linalg.norm(self.ball - team_mate) < 0.15):
+        elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2) and (np.linalg.norm(self.ball - team_mate) > 0.3):
             target_x, target_y = self.ball
+            self.logger.debug('ball rush')
             self.strategy = Strategy.BALL_RUSH
 
         elif faces_ball(self.get_opposing_shooter(), self.ball, 20):

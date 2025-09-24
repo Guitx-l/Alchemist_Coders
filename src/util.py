@@ -4,11 +4,15 @@ import sys
 import math
 import argparse
 import numpy as np
-from logging import Logger
+import logging
+from log import getLogger
 from typing import Literal, Sequence, Callable
 
-
 type array = np.ndarray[tuple[int, ...], np.dtype[np.floating]]
+
+
+def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
+    return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
 
 def faces_ball(robot: rsk.client.ClientRobot, ball: array, threshold: int = 10) -> bool:
@@ -148,9 +152,10 @@ class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
         self.client = client
-        self.logger: Logger = Logger(self.__class__.__name__)
-        self.referee: dict = self.client.referee
         self.team = team
+        self.logger: logging.Logger = getLogger(self.__class__ .__name__)
+        self.referee: dict = self.client.referee
+        self.logger.setLevel(logging.DEBUG)
 
     def goal_sign(self) -> Literal[1, -1]:
         return -1 if self.client.referee['teams'][self.team]['x_positive'] else 1
@@ -191,8 +196,9 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
     :return:
     """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
-    logger = Logger("client_loader")
+    logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
+    logger.info('apagnan')
     team = arguments.team
 
     with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel
@@ -202,7 +208,7 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
                 client.update()
             except rsk.client.ClientError as e:
                 if arguments.verbose and repr(e)[0] != "#":
-                    client.logger.warn(e)
+                    client.logger.warning(e)
             except KeyboardInterrupt:
                 sys.exit(0)
 

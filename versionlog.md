@@ -2,6 +2,7 @@
 - reset all the tags for some reason
 - removed colorama and custom logger
 - first try to fix clogging
+- modified is_shooter()
 
 # 5.1.0
 - ball_behind fix in shooter

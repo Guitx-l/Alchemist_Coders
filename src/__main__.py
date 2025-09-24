@@ -1,5 +1,5 @@
 import threading
-from util import start_client
+from util.init import start_client
 from multi_client import MultiClient
 
 

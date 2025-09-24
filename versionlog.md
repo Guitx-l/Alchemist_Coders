@@ -1,15 +1,16 @@
 # 5.1.1
 - reset all the tags for some reason
-- removed colorama and custom logger
+- removed colorama and custom logger and replaced with standard custom logger
 - first try to fix clogging
 - modified is_shooter()
+- separated util file into multiple files
 
 # 5.1.0
 - ball_behind fix in shooter
 
 # 5.0.0
 - added real goalkeeper
-- added MultiCLient class
+- added MultiClient class
 
 # 4.1.1
 - aim system actually works

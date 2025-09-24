@@ -1,5 +1,5 @@
 import rsk
-import util
+from util.bot import BaseClient, can_play
 from shooter import ShooterClient
 from goalkeeper import GoalKeeperClient
 from typing import Literal
@@ -10,12 +10,12 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int) -> bo
     bot = client.robots[team][number]
     other_bot = client.robots[team][3 - number]
 
-    if not util.can_play(other_bot, client.referee):
+    if not can_play(other_bot, client.referee):
         return client.ball[0] * goal_sign > 0
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 
-class MultiClient(util.BaseClient):
+class MultiClient(BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue'], number: Literal[1, 2]) -> None:
         super().__init__(client, team)
         self.number = number
@@ -25,7 +25,7 @@ class MultiClient(util.BaseClient):
         self.shooter_client.shooter = self.client.robots[team][number]
         self.keeper_client.keeper = self.client.robots[team][number]
 
-    def get_client(self) -> util.BaseClient:
+    def get_client(self) -> BaseClient:
         if is_shooter(self.client, self.team, self.number, self.goal_sign()):
             return self.shooter_client
         return self.keeper_client

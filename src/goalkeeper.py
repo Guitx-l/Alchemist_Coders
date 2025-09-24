@@ -4,7 +4,9 @@ import numpy as np
 import rsk
 import util
 import math
-from util import array, faces_ball
+from util import array_type
+from util.math import faces_ball
+from util.bot import BaseClient
 from typing import Literal
 
 class Strategy(enum.Enum):
@@ -18,12 +20,12 @@ class Strategy(enum.Enum):
 
 
 
-class GoalKeeperClient(util.BaseClient):
+class GoalKeeperClient(BaseClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.last_timestamp = time.time()
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
-        self.last_ball_position: array = np.zeros(2)
+        self.last_ball_position: array_type = np.zeros(2)
         self.strategy: Strategy = Strategy.NONE
 
     def get_opposing_shooter(self) -> rsk.client.ClientRobot:
@@ -40,7 +42,7 @@ class GoalKeeperClient(util.BaseClient):
         target_y = self.keeper.position[1]
         self.strategy = Strategy.NONE
 
-        if not util.is_inside_court(self.ball):
+        if not util.math.is_inside_court(self.ball):
             self.keeper.goto(self.keeper.pose)
             return
 
@@ -56,14 +58,14 @@ class GoalKeeperClient(util.BaseClient):
             
         elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2) and (np.linalg.norm(self.ball - team_mate) > 0.3):
             target_x, target_y = self.ball
-            self.logger.debug('ball rush')
+            #self.logger.debug('ball rush')
             self.strategy = Strategy.BALL_RUSH
 
         elif faces_ball(self.get_opposing_shooter(), self.ball, 20):
             target_y = opp_shooter[1] + (math.tan(opp_shooter[2]) * (goal_post_x - opp_shooter[0]))
             self.strategy = Strategy.TAN_SHOOTER
 
-        elif util.get_alignment(np.array([target_x, target_y]), self.ball, opp_shooter[:2]) < 10:
+        elif util.math.get_alignment(np.array([target_x, target_y]), self.ball, opp_shooter[:2]) < 10:
             target_y = self.ball[1] + (self.ball[1] - opp_shooter[1]) / (self.ball[0] - opp_shooter[0]) * (goal_post_x - self.ball[0])
             self.strategy = Strategy.THALES_SHOOTER
 
@@ -79,16 +81,16 @@ class GoalKeeperClient(util.BaseClient):
 
         ball_vector = self.keeper.position - self.ball
         ball_vector[0] = ball_vector[0] * self.goal_sign()
-        if abs(util.angle_of(ball_vector)) < math.radians(100):
+        if abs(util.math.angle_of(ball_vector)) < math.radians(100):
             if self.keeper.pose[1] > self.ball[1]:
-                target_x, target_y = self.ball + (util.normalized([-1 * self.goal_sign(), 1]) * 0.25)
+                target_x, target_y = self.ball + (util.math.normalized([-1 * self.goal_sign(), 1]) * 0.25)
             else:
-                target_x, target_y = self.ball + (util.normalized([-1 * self.goal_sign(), -1]) * 0.25)
+                target_x, target_y = self.ball + (util.math.normalized([-1 * self.goal_sign(), -1]) * 0.25)
             self.strategy = Strategy.BALL_BEHIND
 
         self.keeper.goto((target_x, target_y, math.pi if self.goal_sign() == -1 else 0), wait=False)
 
-        if util.is_inside_circle(self.ball, self.keeper.position, 0.15):
+        if util.math.is_inside_circle(self.ball, self.keeper.position, 0.15):
             self.keeper.kick(1)
 
         if time.time() - self.last_timestamp > 0.2:

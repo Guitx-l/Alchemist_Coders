@@ -3,7 +3,7 @@
 - removed colorama and custom logger and replaced with standard custom logger
 - first try to fix clogging
 - modified is_shooter()
-- separated util file into multiple files
+- separated repo into multiple packages
 
 # 5.1.0
 - ball_behind fix in shooter

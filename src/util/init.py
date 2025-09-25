@@ -3,7 +3,7 @@ import sys
 import argparse
 from typing import Literal, Callable
 from .log import getLogger
-from .bot import BaseClient
+from src.bot import BaseClient
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
@@ -30,7 +30,7 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
-    logger.info('apagnan')
+    logger.info(sys.path)
     team = arguments.team
 
     with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel

@@ -18,6 +18,8 @@ Si vous voulez nous soutenir nous avons <a href="about:blank">une cagnotte</a>.
 
 # Installation 
 
+- cloner le dépot
+
 # Documentation
 
 https://robot-soccer-kit.github.io/
@@ -31,7 +33,7 @@ Faire une "banque" de comportemements et de stratégies qui guidera les robots e
 Voici les règles du jeu : 
 https://robot-soccer-kit.github.io/referee
 
-Utiliser la version 3.12 de python car python 3.13 n'a pas été testé avec le game controleur ; Donc il peut y avoir des erreurs potentielles. Pour information le game controleur tourne avec la version 3.11 mais est compatible avec la version 3.12.
+Le game controller est disponible dans les versions 3.11, 3.12 et 3.13 de python mais ce dépôt ne marchera qu'à partir de la version 3.12.
 
 la majorité du travail se fera sur : https://robot-soccer-kit.github.io/programming
 
@@ -41,10 +43,10 @@ driver rsk : https://github.com/robot-soccer-kit/robot-soccer-kit/tree/master/rs
 
 # Nos résultats
 
-|                              compétition                               |            date            |  classement  |
-|:----------------------------------------------------------------------:|:--------------------------:|:------------:|
-| [Robocup Académique](https://competition.robot-soccer-kit.com/team/1)  |         10/04/2025         |     2eme     |
-|  [Robocup Nationale](https://competition.robot-soccer-kit.com/team/3)  |  31/05/2025 -> 01/06/2025  |      X       |
-| [Robocup Européenne](https://competition.robot-soccer-kit.com/team/4)  |  04/06/2025 -> 07/06/2025  |      X       |
+|                              compétition                               |            date            | classement |
+|:----------------------------------------------------------------------:|:--------------------------:|:----------:|
+| [Robocup Académique](https://competition.robot-soccer-kit.com/team/1)  |         10/04/2025         |    2eme    |
+|  [Robocup Nationale](https://competition.robot-soccer-kit.com/team/3)  |  31/05/2025 -> 01/06/2025  |    2eme    |
+| [Robocup Européenne](https://competition.robot-soccer-kit.com/team/4)  |  04/06/2025 -> 07/06/2025  |     X      |
 
 

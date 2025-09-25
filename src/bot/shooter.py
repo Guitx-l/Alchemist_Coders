@@ -1,11 +1,11 @@
 import rsk
 import time
 import math
-import util
 import random
 import numpy as np
-from util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
-from util.bot import BaseClient
+from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
+from src.bot import BaseClient
+from src.util.init import start_client
 from typing import Literal
 
 
@@ -93,4 +93,4 @@ class ShooterClient(BaseClient):
 
 
 if __name__ == "__main__":
-    util.start_client(ShooterClient)
+    start_client(ShooterClient)

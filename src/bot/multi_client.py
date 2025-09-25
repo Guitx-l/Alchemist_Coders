@@ -1,7 +1,7 @@
 import rsk
-from util.bot import BaseClient, can_play
-from shooter import ShooterClient
-from goalkeeper import GoalKeeperClient
+from src.bot import BaseClient, can_play
+from src.bot.shooter import ShooterClient
+from src.bot.goalkeeper import GoalKeeperClient
 from typing import Literal
 
 

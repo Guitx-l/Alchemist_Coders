@@ -1,6 +1,8 @@
+import sys
 import threading
-from util.init import start_client
-from multi_client import MultiClient
+sys.path.append(".")
+from src.util.init import start_client
+from src.bot.multi_client import MultiClient
 
 
 

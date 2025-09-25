@@ -2,11 +2,12 @@ import enum
 import time
 import numpy as np
 import rsk
-import util
+import src.util as util
 import math
-from util import array_type
-from util.math import faces_ball
-from util.bot import BaseClient
+from src.util import array_type
+from src.util.math import faces_ball
+from src.bot import BaseClient
+from src.util.init import start_client
 from typing import Literal
 
 class Strategy(enum.Enum):
@@ -100,4 +101,4 @@ class GoalKeeperClient(BaseClient):
 
 
 if __name__ == "__main__":
-    util.start_client(GoalKeeperClient)
+    start_client(GoalKeeperClient)

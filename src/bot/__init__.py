@@ -2,9 +2,9 @@ import rsk
 from typing import Literal, Sequence
 import logging
 import abc
-from .log import getLogger
-from .math import is_inside_left_zone, is_inside_right_zone
-from .__init__ import *
+from src.util.log import getLogger
+from src.util.math import is_inside_left_zone, is_inside_right_zone
+from src.util import array_type
 
 
 def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
@@ -36,7 +36,7 @@ class BaseClient(abc.ABC):
     @property
     def ball(self) -> array_type:
         """
-        provides easy access to the ball, may raise a rsk.client.CLientError if the ball cannot be found
+        provides easy access to the ball, may raise a rsk.client.ClientError if the ball cannot be found
         :return: the position of the ball
         """
         if self.client.ball is None:

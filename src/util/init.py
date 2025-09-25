@@ -15,9 +15,7 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
     parser.add_argument('-H', '--host', type=str, default="127.0.0.1", help="host of the client, localhost by default")
     parser.add_argument('-k', '--key', type=str, default="", help="key of the client, empty by default")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-v', '--verbose', action='store_true')
-    group.add_argument('-q', '--quiet', action='store_true')
+    parser.add_argument('-v', '--verbose', action='store_true', help="if specified, the client will print all the warnings, not only the important ones")
     return parser
 
 def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], BaseClient], args: list[str] | None = None):
@@ -30,7 +28,6 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
     logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
-    logger.info(sys.path)
     team = arguments.team
 
     with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel

@@ -1,3 +1,7 @@
+"""
+La ou ya tous les bots
+"""
+
 import rsk
 from typing import Literal, Sequence
 import logging

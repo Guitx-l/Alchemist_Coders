@@ -4,13 +4,13 @@ import math
 import random
 import numpy as np
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
-from src.bot import BaseClient
+from src.bot import BotClient
 from src.util.init import start_client
 from typing import Literal
 
 
 
-class ShooterClient(BaseClient):
+class ShooterClient(BotClient):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]

@@ -4,11 +4,13 @@ import numpy as np
 import rsk
 import src.util as util
 import math
+from typing import Literal
 from src.util import array_type
 from src.util.math import faces_ball
-from src.bot import BaseClient
+from src.bot import BotClient
 from src.util.init import start_client
-from typing import Literal
+
+
 
 class Strategy(enum.Enum):
     NONE = enum.auto()
@@ -20,9 +22,8 @@ class Strategy(enum.Enum):
     PROJECT = enum.auto()
 
 
-
-class GoalKeeperClient(BaseClient):
-    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
+class GoalKeeperClient(BotClient):
+    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> NoReturn:
         super().__init__(client, team)
         self.last_timestamp = time.time()
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]
@@ -59,7 +60,6 @@ class GoalKeeperClient(BaseClient):
             
         elif no_shooter and (self.ball[0] * self.goal_sign() < 0.2) and (np.linalg.norm(self.ball - team_mate) > 0.3):
             target_x, target_y = self.ball
-            #self.logger.debug('ball rush')
             self.strategy = Strategy.BALL_RUSH
 
         elif faces_ball(self.get_opposing_shooter(), self.ball, 20):

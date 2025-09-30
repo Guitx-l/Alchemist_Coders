@@ -3,9 +3,8 @@ La ou ya tous les bots
 """
 
 import rsk
-from typing import Literal, Sequence
 import logging
-import abc
+from typing import Literal, Sequence
 from src.util.log import getLogger
 from src.util.math import is_inside_left_zone, is_inside_right_zone
 from src.util import array_type
@@ -14,24 +13,22 @@ from src.util import array_type
 def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
     return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
-class BaseClient(abc.ABC):
+
+class BotClient:
     """
     Top of the class hierarchy
     Contains common code for all clients and abstract methods to be overridden by subclasses
     Provides an interface for all clients classes
     """
-    @abc.abstractmethod
+
     def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
         self.client = client
         self.team = team
-        self.logger: logging.Logger = getLogger(self.__class__ .__name__)
-        self.referee: dict = self.client.referee
-        self.logger.setLevel(logging.DEBUG)
+        self.logger: logging.Logger = getLogger(self.__class__.__name__)
 
     def goal_sign(self) -> Literal[1, -1]:
         return -1 if self.client.referee['teams'][self.team]['x_positive'] else 1
 
-    @abc.abstractmethod
     def update(self) -> None:
         """
         main method of the client, should be called inside a while loop

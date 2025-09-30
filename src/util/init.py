@@ -3,7 +3,7 @@ import sys
 import argparse
 from typing import Literal, Callable
 from .log import getLogger
-from src.bot import BaseClient
+from src.bot import BotClient
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
@@ -18,14 +18,12 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser.add_argument('-v', '--verbose', action='store_true', help="if specified, the client will print all the warnings, not only the important ones")
     return parser
 
-def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], BaseClient], args: list[str] | None = None):
+def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], BotClient]) -> None:
     """
-    Takes one class/function/object returning a BaseClient object and runs them automatically without any further intervention, even during the halftime.
-    :param ClientClass: Callable returning BaseClient type object.
-    :param args: arguments used by the parser specified in get_parser(), the function takes arguments directly from sys.argv if this argument is not specified
-    :return:
+    Takes one class/function/object returning a BotClient object and runs them automatically without any further intervention, even during the halftime.
+    :param ClientClass: Callable returning BotClient type object.
     """
-    arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::] if args is None else args)
+    arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
     logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
     team = arguments.team
@@ -38,5 +36,3 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
             except rsk.client.ClientError as e:
                 if arguments.verbose and repr(e)[0] != "#":
                     client.logger.warning(e)
-            except KeyboardInterrupt:
-                sys.exit(0)

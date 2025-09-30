@@ -28,16 +28,6 @@ def is_inside_circle(point: array_type, center: array_type, radius: float) -> bo
     return np.linalg.norm(center - point) <= radius
 
 
-def is_inside_rect(point: Sequence[float] | array_type, bottomleft: Sequence[float] | array_type, topright: Sequence[float] | array_type) -> bool:
-    """
-    :param point: Point to be checked
-    :param bottomleft: Bottom left of the rectangle (x,y)
-    :param topright: Top right fo the rectangle (x,y)
-    :return: Whether point is inside the rect defined by bottomleft and topright
-    """
-    return bottomleft[0] <= point[0] <= topright[0] and bottomleft[1] <= point[1] <= topright[1]
-
-
 def is_inside_court(x: Sequence[float] | array_type) -> bool:
     """
     :param x: The position to be checked

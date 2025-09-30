@@ -1,3 +1,3 @@
 """
-Blablabla dépot du code breef regarde le README
+Blablabla dépot du code bref regarde le README
 """

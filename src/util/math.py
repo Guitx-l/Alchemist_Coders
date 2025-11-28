@@ -103,3 +103,16 @@ def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, cente
     t = np.dot(center - linepoint1, line_vector) / np.linalg.norm(line_vector) ** 2
     t = np.clip(t,0, 1)
     return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
+
+
+def rotate_vector(vector: array_type, angle: float) -> array_type:
+    """
+    returns a copy of a vector rotated by a given angle
+    :param vector: rotated vector as a numpy array
+    :param angle: angle of rotation in radians
+    :return: the same vector but rotated by the angle given by the user
+    """
+    return np.array([
+        [np.cos(angle), -np.sin(angle)],
+        [np.sin(angle), np.cos(angle)]
+    ]) @ vector

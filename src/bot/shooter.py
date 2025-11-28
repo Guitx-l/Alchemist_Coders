@@ -6,11 +6,12 @@ import numpy as np
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import BotClient
 from src.util.init import start_client
+from src.util import MetaSingleton
 from typing import Literal
 
 
 
-class ShooterClient(BotClient):
+class ShooterClient(BotClient, metaclass=MetaSingleton):
     def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.shooter: rsk.client.ClientRobot = client.robots[team][1]

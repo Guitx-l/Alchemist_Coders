@@ -5,7 +5,7 @@ import rsk
 import src.util as util
 import math
 from typing import Literal
-from src.util import array_type
+from src.util import array_type, MetaSingleton
 from src.util.math import faces_ball
 from src.bot import BotClient
 from src.util.init import start_client
@@ -22,8 +22,8 @@ class Strategy(enum.Enum):
     PROJECT = enum.auto()
 
 
-class GoalKeeperClient(BotClient):
-    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> NoReturn:
+class GoalKeeperClient(BotClient, metaclass=MetaSingleton):
+    def __init__(self, client: rsk.Client, team: Literal['blue', 'green'] = 'blue') -> None:
         super().__init__(client, team)
         self.last_timestamp = time.time()
         self.keeper: rsk.client.ClientRobot = client.robots[team][2]

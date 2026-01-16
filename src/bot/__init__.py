@@ -4,6 +4,7 @@ La ou ya tous les bots
 
 import rsk
 import logging
+import dataclasses
 from typing import Literal, Sequence
 from src.util.log import getLogger
 from src.util.math import is_inside_left_zone, is_inside_right_zone
@@ -13,26 +14,17 @@ from src.util import array_type
 def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
     return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
+@dataclasses.dataclass
+class BotData:
+    client: rsk.Client
+    team: Literal['green', 'blue']
+    logger: logging.Logger = dataclasses.field(init=False)
 
-class BotClient:
-    """
-    Top of the class hierarchy
-    Contains common code for all clients and abstract methods to be overridden by subclasses
-    Provides an interface for all clients classes
-    """
-
-    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
-        self.client = client
-        self.team = team
+    def __post_init__(self):
         self.logger: logging.Logger = getLogger(self.__class__.__name__)
 
     def goal_sign(self) -> Literal[1, -1]:
         return -1 if self.client.referee['teams'][self.team]['x_positive'] else 1
-
-    def update(self) -> None:
-        """
-        main method of the client, should be called inside a while loop
-        """
 
     @property
     def ball(self) -> array_type:
@@ -43,7 +35,7 @@ class BotClient:
         if self.client.ball is None:
             raise rsk.client.ClientError("#ball is none")
         return self.client.ball
-
+    
     def is_inside_defense_zone(self, pos: Sequence[float]) -> bool:
         """
         Uses the goal_sign() method to know if a point is inside the client's defense zone

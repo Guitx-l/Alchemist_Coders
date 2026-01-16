@@ -3,7 +3,7 @@ import sys
 import argparse
 from typing import Literal, Callable
 from .log import getLogger
-from src.bot import BotClient
+from src.bot import BotData
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
@@ -18,10 +18,11 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser.add_argument('-v', '--verbose', action='store_true', help="if specified, the client will print all the warnings, not only the important ones")
     return parser
 
-def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], BotClient]) -> None:
+def start_client(DataClass: Callable[[rsk.Client, Literal['green', 'blue']], BotData], update_func: Callable[[BotData], None]) -> None:
     """
-    Takes one class/function/object returning a BotClient object and runs them automatically without any further intervention, even during the halftime.
+    Takes one class/function/object returning a BotData object and runs update_func automatically without any further intervention, even during the halftime.
     :param ClientClass: Callable returning BotClient type object.
+    :param update_func: function that will be called every "frame" with the BotClient object as argument.
     """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
     logger = getLogger("client_loader")
@@ -29,10 +30,10 @@ def start_client(ClientClass: Callable[[rsk.Client, Literal['green', 'blue']], B
     team = arguments.team
 
     with rsk.Client(host=arguments.host, key=arguments.key) as c:  # tkt c un bordel mais touche pas ca marche nickel
-        client = ClientClass(c, team)
+        data = DataClass(c, team)
         while True:
             try:
-                client.update()
+                update_func(data)
             except rsk.client.ClientError as e:
-                if arguments.verbose and repr(e)[0] != "#":
-                    client.logger.warning(e)
+                if arguments.verbose and str(e)[0] != "#":
+                    data.logger.warning(e)

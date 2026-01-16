@@ -1,7 +1,6 @@
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
 
-
 ## WORK IN PROGRESS:
 - lots of little thingies to adjust & sync
 - shooter rework / that weird bug (no timed circle entry)

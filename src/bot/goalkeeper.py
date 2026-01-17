@@ -23,6 +23,18 @@ class Strategy(enum.Enum):
     PROJECT = enum.auto()
 
 
+@dataclasses.dataclass
+class GoalKeeperData(BotData):
+    keeper: rsk.client.ClientRobot = dataclasses.field(init=False)
+    last_ball_position: array_type = dataclasses.field(default_factory=lambda: np.zeros(2))
+    strategy: Strategy = Strategy.NONE
+    last_timestamp: float = dataclasses.field(default_factory=time.time)
+    
+    def __post_init__(self):
+        super().__post_init__()
+        self.keeper = self.client.robots[self.team][2]
+
+
 def get_opposing_shooter(bot_data: GoalKeeperData) -> rsk.client.ClientRobot:
         opposing_team: str = "blue" if bot_data.keeper.team == "green" else "green"
         opp_1 = bot_data.client.robots[opposing_team][1]
@@ -33,16 +45,7 @@ def get_opposing_shooter(bot_data: GoalKeeperData) -> rsk.client.ClientRobot:
         return opp_2
 
 
-@dataclasses.dataclass
-class GoalKeeperData(BotData):
-    keeper: rsk.client.ClientRobot = dataclasses.field(init=False)
-    last_ball_position: array_type = dataclasses.field(default_factory=lambda: np.zeros(2))
-    strategy: Strategy = Strategy.NONE
-    last_timestamp: float = dataclasses.field(default_factory=time.time)
-    
-    def __post_init__(self):
-        super().__post_init__()
-        self.keeper = self.client.robots[self.team][1]
+
 
 
 def update(data: GoalKeeperData) -> None:
@@ -68,7 +71,7 @@ def update(data: GoalKeeperData) -> None:
         target_x, target_y = data.ball
         data.strategy = Strategy.BALL_RUSH
 
-    elif faces_ball(opp_shooter, data.ball, 20):
+    elif faces_ball(get_opposing_shooter(data), data.ball, 20):
         target_y = opp_shooter[1] + (math.tan(opp_shooter[2]) * (goal_post_x - opp_shooter[0]))
         data.strategy = Strategy.TAN_SHOOTER
 

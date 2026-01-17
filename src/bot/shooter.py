@@ -10,6 +10,21 @@ from src.util.init import start_client
 from typing import Literal
 
 
+@dataclasses.dataclass
+class ShooterData(BotData):
+    last_ball_overlap: float = dataclasses.field(default_factory=time.time)
+    last_kick: float = dataclasses.field(default_factory=time.time)
+    shooter: rsk.client.ClientRobot = dataclasses.field(init=False)
+    _goal_pos: array_type = dataclasses.field(default_factory=lambda: np.array([rsk.constants.field_length / 2, random.random() * 0.6 - 0.3]))
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.shooter = self.client.robots[self.team][1]
+
+    def is_inside_timed_circle(self) -> bool:
+        return is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
+
+
 def evade_ball_abuse(data: ShooterData) -> bool:
     if data.is_inside_timed_circle():
         if time.time() - data.last_ball_overlap > 2.5:
@@ -43,21 +58,6 @@ def get_goal_position(data: ShooterData) -> array_type:
             data.logger.debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data._goal_pos[1], 3)} -> {round(new_goal_pos[1], 3)})")
             data._goal_pos = new_goal_pos
         return data._goal_pos
-
-
-@dataclasses.dataclass
-class ShooterData(BotData):
-    last_ball_overlap: float = dataclasses.field(default_factory=time.time)
-    last_kick: float = dataclasses.field(default_factory=time.time)
-    shooter: rsk.client.ClientRobot = dataclasses.field(init=False)
-    _goal_pos: array_type = dataclasses.field(default_factory=lambda: np.array([rsk.constants.field_length / 2, random.random() * 0.6 - 0.3]))
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.shooter = self.client.robots[self.team][0]
-
-    def is_inside_timed_circle(self) -> bool:
-        return is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
 
 
 def update(data: ShooterData) -> None:

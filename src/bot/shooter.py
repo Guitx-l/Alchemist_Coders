@@ -3,23 +3,19 @@ import time
 import math
 import random
 import numpy as np
-import dataclasses
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import BotData
 from src.util.init import start_client
 from typing import Literal
 
 
-@dataclasses.dataclass
 class ShooterData(BotData):
-    last_ball_overlap: float = dataclasses.field(default_factory=time.time)
-    last_kick: float = dataclasses.field(default_factory=time.time)
-    shooter: rsk.client.ClientRobot = dataclasses.field(init=False)
-    _goal_pos: array_type = dataclasses.field(default_factory=lambda: np.array([rsk.constants.field_length / 2, random.random() * 0.6 - 0.3]))
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.shooter = self.client.robots[self.team][1]
+    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
+        super().__init__(client, team)
+        self.last_ball_overlap = time.time()
+        self.last_kick = time.time()
+        self.shooter: rsk.client.ClientRobot = self.client.robots[self.team][1]
+        self._goal_pos: array_type = np.array([rsk.constants.field_length / 2, random.random() * 0.6 - 0.3])
 
     def is_inside_timed_circle(self) -> bool:
         return is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)

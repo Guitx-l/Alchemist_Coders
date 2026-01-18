@@ -1,10 +1,8 @@
 """
 La ou ya tous les bots
 """
-
 import rsk
 import logging
-import dataclasses
 from typing import Literal, Sequence
 from src.util.log import getLogger
 from src.util.math import is_inside_left_zone, is_inside_right_zone
@@ -14,14 +12,12 @@ from src.util import array_type
 def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
     return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
-@dataclasses.dataclass
-class BotData:
-    client: rsk.Client
-    team: Literal['green', 'blue']
-    logger: logging.Logger = dataclasses.field(init=False)
 
-    def __post_init__(self):
-        self.logger: logging.Logger = getLogger(self.__class__.__name__)
+class BotData:
+    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
+        self.client = client
+        self.team = team
+        self.logger = getLogger(self.__class__.__name__)
 
     def goal_sign(self) -> Literal[1, -1]:
         return -1 if self.client.referee['teams'][self.team]['x_positive'] else 1

@@ -1,5 +1,4 @@
 import rsk
-import dataclasses
 from typing import Literal
 from src.bot import BotData, can_play
 from src.bot.shooter import ShooterData, update as shooter_update
@@ -15,14 +14,10 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball)
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 
-@dataclasses.dataclass
 class MultiBotData(BotData):
-    number: Literal[1, 2] = 1
-    shooter_data: ShooterData = dataclasses.field(init=False)
-    keeper_data: GoalKeeperData = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        super().__post_init__()
+    def __init__(self, client: rsk.Client, team: Literal['green', 'blue'], number: Literal[1, 2]) -> None:
+        super().__init__(client, team)
+        self.number = number
         self.shooter_data = ShooterData(self.client, self.team)
         self.keeper_data = GoalKeeperData(self.client, self.team)
 
@@ -32,7 +27,8 @@ class MultiBotData(BotData):
 
 def update(data: MultiBotData) -> None:
     if is_shooter(data.client, data.team, data.number, data.goal_sign(), data.ball):
-        return shooter_update(data.shooter_data)
-    goalkeeper_update(data.keeper_data)
+        shooter_update(data.shooter_data)
+    else:
+        goalkeeper_update(data.keeper_data)
 
 

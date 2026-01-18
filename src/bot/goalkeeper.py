@@ -1,14 +1,11 @@
 import enum
 import time
-import numpy as np
 import rsk
-import src.util as util
-import src.util.math as math_util
 import math
-import dataclasses
+import numpy as np
 from typing import Literal
+import src.util.math as math_util
 from src.util import array_type
-from src.util.math import faces_ball
 from src.bot import BotData
 from src.util.init import start_client
 
@@ -23,16 +20,13 @@ class Strategy(enum.Enum):
     PROJECT = enum.auto()
 
 
-@dataclasses.dataclass
 class GoalKeeperData(BotData):
-    keeper: rsk.client.ClientRobot = dataclasses.field(init=False)
-    last_ball_position: array_type = dataclasses.field(default_factory=lambda: np.zeros(2))
-    strategy: Strategy = Strategy.NONE
-    last_timestamp: float = dataclasses.field(default_factory=time.time)
-    
-    def __post_init__(self):
-        super().__post_init__()
-        self.keeper = self.client.robots[self.team][2]
+    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
+        super().__init__(client, team)
+        self.keeper: rsk.client.ClientRobot = self.client.robots[self.team][2]
+        self.last_ball_position = np.zeros(2)
+        self.strategy = Strategy.NONE
+        self.last_timestamp = time.time()
 
 
 def get_opposing_shooter(bot_data: GoalKeeperData) -> rsk.client.ClientRobot:
@@ -43,9 +37,6 @@ def get_opposing_shooter(bot_data: GoalKeeperData) -> rsk.client.ClientRobot:
         if np.linalg.norm(opp_1.position - bot_data.ball) < np.linalg.norm(opp_2.position - bot_data.ball):
             return opp_1
         return opp_2
-
-
-
 
 
 def update(data: GoalKeeperData) -> None:
@@ -71,7 +62,7 @@ def update(data: GoalKeeperData) -> None:
         target_x, target_y = data.ball
         data.strategy = Strategy.BALL_RUSH
 
-    elif faces_ball(get_opposing_shooter(data), data.ball, 20):
+    elif math_util.faces_ball(get_opposing_shooter(data), data.ball, 20):
         target_y = opp_shooter[1] + (math.tan(opp_shooter[2]) * (goal_post_x - opp_shooter[0]))
         data.strategy = Strategy.TAN_SHOOTER
 

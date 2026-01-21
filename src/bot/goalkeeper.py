@@ -5,8 +5,7 @@ import math
 import numpy as np
 from typing import Literal
 import src.util.math as math_util
-from src.util import array_type
-from src.bot import BotData
+from src.bot import BotData, can_play
 from src.util.init import start_client
 
 
@@ -39,7 +38,10 @@ def get_opposing_shooter(bot_data: GoalKeeperData) -> rsk.client.ClientRobot:
         return opp_2
 
 
-def update(data: GoalKeeperData) -> None:
+def goalkeeper_update(data: GoalKeeperData) -> None:
+    if data.keeper.pose is None:
+        return
+    
     target_x = -0.92 * data.goal_sign()
     target_y = data.keeper.position[1]
     data.strategy = Strategy.NONE
@@ -49,7 +51,7 @@ def update(data: GoalKeeperData) -> None:
         return
 
     opp_shooter = get_opposing_shooter(data).pose
-    team_mate = data.client.robots[data.team][3 - data.keeper.number].position
+    team_mate = data.client.robots[data.team][3 - data.keeper.number]
     goal_post_x = -0.92 * data.goal_sign()
     no_shooter = np.linalg.norm(data.ball - opp_shooter[:2]) > 0.18
 
@@ -58,7 +60,11 @@ def update(data: GoalKeeperData) -> None:
         target_y = data.ball[1] + (ball_vector[1] * (goal_post_x - data.last_ball_position[0]) / ball_vector[0])
         data.strategy = Strategy.BALL_VECTOR
         
-    elif no_shooter and (data.ball[0] * data.goal_sign() < 0.2) and (np.linalg.norm(data.ball - team_mate) > 0.3):
+    elif (
+        no_shooter
+        and (data.ball[0] * data.goal_sign() < 0.2)
+        and not (np.linalg.norm(data.ball - team_mate.position) > 0.3 is False and can_play(team_mate, data.client.referee)) 
+    ):
         target_x, target_y = data.ball
         data.strategy = Strategy.BALL_RUSH
 
@@ -71,11 +77,12 @@ def update(data: GoalKeeperData) -> None:
         data.strategy = Strategy.THALES_SHOOTER
 
 
-    if not data.is_inside_defense_zone(data.ball) and data.ball[0] * data.goal_sign() < 0.1 and data.strategy not in (Strategy.NONE, Strategy.BALL_RUSH):
-        goal_pos = np.array([target_x, target_y])
-        trajectory = data.ball - goal_pos
-        new_target = goal_pos + trajectory * (np.dot(data.keeper.position - goal_pos, trajectory) / np.linalg.norm(trajectory) ** 2)
-        target_x, target_y = new_target
+    if (
+        not data.is_inside_defense_zone(data.ball) 
+        and data.ball[0] * data.goal_sign() < 0.1 
+        and data.strategy not in (Strategy.NONE, Strategy.BALL_RUSH)
+    ):
+        target_x, target_y = math_util.project_on_line(data.keeper.position, np.array([target_x, target_y]), data.ball)
         data.strategy = Strategy.PROJECT
     elif data.strategy != Strategy.BALL_RUSH:
         target_y = np.clip(target_y, -0.25, 0.25)
@@ -99,6 +106,5 @@ def update(data: GoalKeeperData) -> None:
         data.last_timestamp = time.time()
 
 
-
 if __name__ == "__main__":
-    start_client(GoalKeeperData, update)
+    start_client(GoalKeeperData, goalkeeper_update)

@@ -2,7 +2,7 @@ import sys
 import threading
 sys.path.append(".")
 from src.util.init import start_client
-from src.bot.multi_client import MultiBotData, update as multi_update
+from src.bot.multi_client import MultiBotData, multi_update
 
 def get_bot1(client, team):
     return MultiBotData(client, team, 1)

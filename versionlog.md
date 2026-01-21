@@ -1,3 +1,7 @@
+# 6.0.0-alpha
+- separated data from update
+- improved kick system
+
 # 5.1.1
 - reset all the tags for some reason
 - removed colorama and custom logger and replaced with standard custom logger

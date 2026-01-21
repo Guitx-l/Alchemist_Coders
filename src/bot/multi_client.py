@@ -1,8 +1,8 @@
 import rsk
 from typing import Literal
 from src.bot import BotData, can_play
-from src.bot.shooter import ShooterData, update as shooter_update
-from src.bot.goalkeeper import GoalKeeperData, update as goalkeeper_update
+from src.bot.shooter import ShooterData, shooter_update
+from src.bot.goalkeeper import GoalKeeperData, goalkeeper_update
 
 
 def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball) -> bool:
@@ -25,10 +25,8 @@ class MultiBotData(BotData):
         self.keeper_data.keeper = self.client.robots[self.team][self.number]
 
 
-def update(data: MultiBotData) -> None:
+def multi_update(data: MultiBotData) -> None:
     if is_shooter(data.client, data.team, data.number, data.goal_sign(), data.ball):
         shooter_update(data.shooter_data)
     else:
         goalkeeper_update(data.keeper_data)
-
-

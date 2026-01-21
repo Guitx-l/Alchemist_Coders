@@ -6,7 +6,7 @@ from .__init__ import array_type
 
 def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, threshold: int = 10) -> bool:
     """
-    Takes in a robot and a threshold and returns whether the robot is pointing at the ball
+    :description: Takes in a robot and a threshold and returns whether the robot is pointing at the ball
     :param robot: robot object to be used for calculations
     :param ball: position of the ball
     :param threshold: margin of error in degrees, default is 10, meaning that this function still returns True
@@ -67,6 +67,7 @@ def normalized(a: np.typing.ArrayLike) -> array_type:
     """
     return np.array(a) / np.linalg.norm(a)
 
+
 def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
     """
     :param goal_pos: Position of the goal (x,y), needs to be a numpy array
@@ -75,14 +76,14 @@ def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offse
     :return: A tuple of three floats containing the position and the angle needed to score a goal to goal pos,
         ready to be used with goto()
     """
-    #finding the shooter pos
     ball_to_goal_vector = goal_pos - ball_pos
     shooter_pos: array_type = ball_to_goal_vector * -shooter_offset_scale + goal_pos
     return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vector)
 
+
 def get_alignment(pos1: array_type, pos2: array_type, base: array_type) -> float:
     """
-    Takes three positions and returns the aligment rate between the 3.
+    :description: Calculates the angle between the vectors base->pos1 and base->pos2
     :param pos1: Position of the first point
     :param pos2: Position of the second point
     :param base: Center position for calculations
@@ -90,16 +91,30 @@ def get_alignment(pos1: array_type, pos2: array_type, base: array_type) -> float
     """
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
+
 def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, center: array_type, radius: float) -> bool:
     """
-    Checkes the collision between a line and a circle
+    :description: Checks whether the line segment defined by linepoint1 and linepoint2 intersects with the circle defined by center and radius
     :param linepoint1: first point of the line, must be a numpy array
     :param linepoint2: second point of the line, must be a numpy array
     :param center: center of the circle
     :param radius: radius of the circle
     :return: Whether the segment between linepoint1 and linepoint2 intersects with the circle defined by center and radius
     """
-    line_vector = linepoint2 - linepoint1
-    t = np.dot(center - linepoint1, line_vector) / np.linalg.norm(line_vector) ** 2
-    t = np.clip(t,0, 1)
-    return np.linalg.norm(line_vector * t + linepoint1 - center) <= radius
+    return np.linalg.norm(project_on_line(center, linepoint1, linepoint2) - center) <= radius
+
+
+def project_on_line(point: array_type, line_point1: array_type, line_point2: array_type, segment: bool = True) -> array_type:
+    """
+    :description: Projects a point onto a line defined by two points
+    :param point: point to be projected
+    :param line_point1: first point of the line
+    :param line_point2: second point of the line
+    :param segment: whether to consider the line as a segment (clamp the projection between line_point1 and line_point2)
+    :return: The projected point on the line
+    """
+    line_vector = line_point2 - line_point1
+    t = np.dot(point - line_point1, line_vector) / np.linalg.norm(line_vector) ** 2
+    if segment:
+        t = np.clip(t, 0, 1)
+    return line_vector * t + line_point1

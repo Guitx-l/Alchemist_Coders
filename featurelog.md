@@ -1,10 +1,13 @@
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
+- side-ball miss fix
 
 ## WORK IN PROGRESS:
 - lots of little thingies to adjust & sync
 - shooter rework / that weird bug (no timed circle entry)
 - court clogging fix
+- fixed shooter-ball offset
+- global simplification
 
 ## NOT FULLY RESOLVED/IMPLEMENTED/COMPLETELY TESTED:
 - better aim system (anticipation & reaction)

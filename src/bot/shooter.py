@@ -56,7 +56,10 @@ def get_goal_position(data: ShooterData) -> array_type:
         return data._goal_pos
 
 
-def update(data: ShooterData) -> None:
+def shooter_update(data: ShooterData) -> None:
+    if data.shooter.pose is None:
+        return
+    
     target = data.shooter.pose
     data._goal_pos[0] = 0.92 * data.goal_sign()
 
@@ -71,6 +74,7 @@ def update(data: ShooterData) -> None:
     if evade_ball_abuse(data):
         return
 
+    # ball-behind fix
     ball_vector = data.shooter.position - data.ball
     ball_vector[0] = ball_vector[0] * data.goal_sign()
     if abs(angle_of(ball_vector)) < math.radians(100):
@@ -81,17 +85,20 @@ def update(data: ShooterData) -> None:
         target = (*pos, angle_of(data.ball - pos))
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
-    elif math.degrees(get_alignment(data.shooter.position, data.ball, get_goal_position(data))) > 25 or (data.is_inside_timed_circle() and not faces_ball(data.shooter, data.ball, 15)):
+    elif (
+        get_alignment(data.shooter.position, data.ball, get_goal_position(data)) > math.radians(25) 
+        or (data.is_inside_timed_circle() and not faces_ball(data.shooter, data.ball, 15))
+    ):
         target = get_shoot_position(get_goal_position(data), data.ball, 1.2)
     else:
         target = get_shoot_position(get_goal_position(data), data.ball, 0.8)
 
     data.shooter.goto(target, wait=False)
-    if is_inside_circle(data.shooter.position, data.ball, 0.13):
+    if is_inside_circle(data.shooter.position, data.ball, 0.13) and faces_ball(data.shooter, data.ball, 15):
         if time.time() - data.last_kick > 1:
             data.shooter.kick(1)
             data.last_kick = time.time()
 
 
 if __name__ == "__main__":
-    start_client(ShooterData, update)
+    start_client(ShooterData, shooter_update)

@@ -34,4 +34,3 @@ class ColorFormatter(logging.Formatter):
             color = red
 
         return f"[{color}{record.levelname}{reset}] [{cyan}{record.name}{reset}] ({darkgrey}{time}{reset}) - {color}{record.getMessage()}{reset}"
-

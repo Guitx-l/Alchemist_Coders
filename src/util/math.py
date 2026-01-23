@@ -68,17 +68,22 @@ def normalized(a: np.typing.ArrayLike) -> array_type:
     return np.array(a) / np.linalg.norm(a)
 
 
-def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
+def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offset: float = 1) -> tuple[float, float, float]:
     """
     :param goal_pos: Position of the goal (x,y), needs to be a numpy array
     :param ball_pos: Position of the ball (x,y), needs  to be a numpy array
-    :param shooter_offset_scale: Scale at which the distance between the goal and the ball is multiplied before being applied
+    :param shooter_offset: Distance added between the ball and the shooter position
     :return: A tuple of three floats containing the position and the angle needed to score a goal to goal pos,
         ready to be used with goto()
     """
-    ball_to_goal_vector = goal_pos - ball_pos
-    shooter_pos: array_type = ball_to_goal_vector * -shooter_offset_scale + goal_pos
-    return shooter_pos[0], shooter_pos[1], angle_of(ball_to_goal_vector)
+    goal_to_ball_vector = ball_pos - goal_pos
+    vector_length = np.linalg.norm(goal_to_ball_vector)
+    length_multiplier = (vector_length + shooter_offset) / vector_length
+    return (
+        goal_to_ball_vector[0] * length_multiplier + goal_pos[0], 
+        goal_to_ball_vector[1] * length_multiplier + goal_pos[1], 
+        angle_of(-goal_to_ball_vector)
+    )
 
 
 def get_alignment(pos1: array_type, pos2: array_type, base: array_type) -> float:

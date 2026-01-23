@@ -63,7 +63,7 @@ def goalkeeper_update(data: GoalKeeperData) -> None:
     elif (
         no_shooter
         and (data.ball[0] * data.goal_sign() < 0.2)
-        and not (np.linalg.norm(data.ball - team_mate.position) > 0.3 is False and can_play(team_mate, data.client.referee)) 
+        and not (not np.linalg.norm(data.ball - team_mate.position) > 0.3 and can_play(team_mate, data.client.referee)) 
     ):
         target_x, target_y = data.ball
         data.strategy = Strategy.BALL_RUSH

@@ -6,7 +6,6 @@ import numpy as np
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import BotData
 from src.util.init import start_client
-from src.util import MetaSingleton
 from typing import Literal
 
 
@@ -44,7 +43,10 @@ def get_goal_position(data: ShooterData) -> array_type:
         new_goal_pos = data._goal_pos.copy()
         modified = False
 
-        while (line_intersects_circle(data.ball, new_goal_pos, opp_robot_1.position, 0.09) or line_intersects_circle(data.ball, new_goal_pos, opp_robot_2.position, 0.09)) and i < 20:
+        while (
+            (line_intersects_circle(data.ball, new_goal_pos, opp_robot_1.position, 0.1) or line_intersects_circle(data.ball, new_goal_pos, opp_robot_2.position, 0.1)) 
+            and i < 20
+        ):
             i += 1
             new_goal_pos[1] = random.random() * 0.6 - 0.3
             modified = True
@@ -75,7 +77,7 @@ def shooter_update(data: ShooterData) -> None:
     if evade_ball_abuse(data):
         return
 
-    # ball-behind fix
+    # if the shooter is behind the ball, then go to the side
     ball_vector = data.shooter.position - data.ball
     ball_vector[0] = ball_vector[0] * data.goal_sign()
     if abs(angle_of(ball_vector)) < math.radians(100):
@@ -90,9 +92,9 @@ def shooter_update(data: ShooterData) -> None:
         get_alignment(data.shooter.position, data.ball, get_goal_position(data)) > math.radians(25) 
         or (data.is_inside_timed_circle() and not faces_ball(data.shooter, data.ball, 15))
     ):
-        target = get_shoot_position(get_goal_position(data), data.ball, 1.2)
+        target = get_shoot_position(get_goal_position(data), data.ball, 0.1)
     else:
-        target = get_shoot_position(get_goal_position(data), data.ball, 0.8)
+        target = get_shoot_position(get_goal_position(data), data.ball, -0.1)
 
     data.shooter.goto(target, wait=False)
     if is_inside_circle(data.shooter.position, data.ball, 0.13) and faces_ball(data.shooter, data.ball, 15):

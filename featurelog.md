@@ -9,7 +9,6 @@
 - lots of little thingies to adjust & sync
 - shooter rework / that weird bug (no timed circle entry)
 - court clogging fix
-- new client.control() only system (w/ matrix multiplication)
 - fixed shooter-ball offset
 - global simplification
 
@@ -36,3 +35,6 @@
 - goalkeeper V3 + misc
 - REAL goalkeeper
 - better documentation
+
+## SCRAPED
+- new client.control() only system (w/ matrix multiplication)

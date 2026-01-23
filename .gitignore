@@ -3,6 +3,7 @@
 __pycache__
 /backups/
 *.ipynb
-.worktrees
+.worktrees/*
+.worktrees/587821f
 .gitignore
 src.zip

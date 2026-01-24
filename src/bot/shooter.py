@@ -2,49 +2,50 @@ import rsk
 import time
 import math
 import random
+import logging
 import numpy as np
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
-from src.bot import BotData
+from src.bot import get_ball, get_goal_sign
 from src.util.init import start_client
-from typing import Literal
 
 
-class ShooterData(BotData):
-    def __init__(self, client: rsk.Client, team: Literal['green', 'blue']) -> None:
-        super().__init__(client, team)
-        self.last_ball_overlap = time.time()
-        self.last_kick = time.time()
-        self.shooter: rsk.client.ClientRobot = self.client.robots[self.team][1]
-        self._goal_pos: array_type = np.array([rsk.constants.field_length / 2, random.random() * 0.6 - 0.3])
-
-    def is_inside_timed_circle(self) -> bool:
-        return is_inside_circle(self.shooter.position, self.ball, rsk.constants.timed_circle_radius)
+def get_shooter_dict() -> dict:
+    return {
+        "last_kick": time.time(),
+        "goal_pos": np.array([0.0, 0.0]),
+        "logger": logging.getLogger("shooter"),
+        "last_ball_overlap": time.time(),
+    }
 
 
-def evade_ball_abuse(data: ShooterData) -> bool:
-    if data.is_inside_timed_circle():
-        if time.time() - data.last_ball_overlap > 2.5:
-            pos = normalized(data.shooter.position - data.ball) * rsk.constants.timed_circle_radius + data.shooter.position
+def is_inside_timed_circle(shooter: rsk.client.ClientRobot, ball: array_type) -> bool:
+    return is_inside_circle(shooter.position, ball, rsk.constants.timed_circle_radius)
+
+
+def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: dict) -> bool:
+    if is_inside_timed_circle(shooter, ball):
+        if time.time() - data['last_ball_overlap'] > 2.5:
+            pos = normalized(shooter.position - ball) * rsk.constants.timed_circle_radius + shooter.position
             if is_inside_court(pos):
-                t = (pos[0], pos[1], data.shooter.orientation)
+                t = (pos[0], pos[1], shooter.orientation)
             else:
-                t = (*(normalized(-data.ball) * 0.3 + data.ball), data.shooter.orientation)
-            data.shooter.goto(t, wait=False)
+                t = (*(normalized(-ball) * 0.3 + ball), shooter.orientation)
+            shooter.goto(t, wait=False)
             return True
     else:
-        data.last_ball_overlap = time.time()
+        data['last_ball_overlap'] = time.time()
     return False
 
 
-def get_goal_position(data: ShooterData) -> array_type:
+def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dict) -> array_type:
         i = 0
-        opp_robot_1 = data.client.robots["green" if data.team == "blue" else "blue"][1]
-        opp_robot_2 = data.client.robots["green" if data.team == "blue" else "blue"][2]
-        new_goal_pos = data._goal_pos.copy()
+        opp_robot_1 = client.robots["green" if team == "blue" else "blue"][1]
+        opp_robot_2 = client.robots["green" if team == "blue" else "blue"][2]
+        new_goal_pos = data["goal_pos"].copy()
         modified = False
 
         while (
-            (line_intersects_circle(data.ball, new_goal_pos, opp_robot_1.position, 0.1) or line_intersects_circle(data.ball, new_goal_pos, opp_robot_2.position, 0.1)) 
+            (line_intersects_circle(ball, new_goal_pos, opp_robot_1.position, 0.1) or line_intersects_circle(ball, new_goal_pos, opp_robot_2.position, 0.1)) 
             and i < 20
         ):
             i += 1
@@ -54,54 +55,57 @@ def get_goal_position(data: ShooterData) -> array_type:
         if i >= 20:
             modified = False
         if modified:
-            data.logger.debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data._goal_pos[1], 3)} -> {round(new_goal_pos[1], 3)})")
-            data._goal_pos = new_goal_pos
-        return data._goal_pos
+            data["logger"].debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data['goal_pos'][1], 3)} -> {round(new_goal_pos[1], 3)})")
+            data["goal_pos"] = new_goal_pos
+        return data["goal_pos"]
 
 
-def shooter_update(data: ShooterData) -> None:
-    if data.shooter.pose is None:
+def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
+    logger: logging.Logger = data["logger"]
+    shooter: rsk.client.ClientRobot = client.robots[team][number]
+    ball: array_type = get_ball(client)
+    goal_sign: int = get_goal_sign(client, team)
+    goal_pos: array_type = data["goal_pos"]
+    goal_pos[0] = 0.92 * goal_sign
+    target = shooter.pose.copy()
+    
+    if shooter.pose is None or evade_ball_abuse(shooter, ball, data):
         return
     
-    target = data.shooter.pose
-    data._goal_pos[0] = 0.92 * data.goal_sign()
+    if client.referee['game_paused']:
+        data['last_ball_overlap'] = time.time()
 
-    if data.client.referee['game_paused']:
-        data.last_ball_overlap = time.time()
-
-    if not is_inside_court(data.ball):
-        data.shooter.goto(data.shooter.pose, wait=False)
-        return
-
-    # if evading ball_abuse
-    if evade_ball_abuse(data):
+    if not is_inside_court(ball):
+        shooter.goto(shooter.pose, wait=False)
         return
 
     # if the shooter is behind the ball, then go to the side
-    ball_vector = data.shooter.position - data.ball
-    ball_vector[0] = ball_vector[0] * data.goal_sign()
+    ball_vector = shooter.position - ball
+    ball_vector[0] = ball_vector[0] * goal_sign
     if abs(angle_of(ball_vector)) < math.radians(100):
-        if data.shooter.pose[1] > data.ball[1]:
-            pos = data.ball + (normalized([-1 * data.goal_sign(), 1]) * 0.25)
+        if shooter.pose[1] > ball[1]:
+            pos = ball + (normalized([-1 * goal_sign, 1]) * 0.25)
         else:
-            pos = data.ball + (normalized([-1 * data.goal_sign(), -1]) * 0.25)
-        target = (*pos, angle_of(data.ball - pos))
+            pos = ball + (normalized([-1 * goal_sign, -1]) * 0.25)
+        target = (pos[0], pos[1], angle_of(ball - pos))
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
     elif (
-        get_alignment(data.shooter.position, data.ball, get_goal_position(data)) > math.radians(25) 
-        or (data.is_inside_timed_circle() and not faces_ball(data.shooter, data.ball, 15))
+        get_alignment(shooter.position, ball, goal_pos) > math.radians(25) 
+        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, 15))
     ):
-        target = get_shoot_position(get_goal_position(data), data.ball, 0.1)
+        goal_pos = get_goal_position(client, ball, team, data)
+        target = get_shoot_position(goal_pos, ball, 0.15)
     else:
-        target = get_shoot_position(get_goal_position(data), data.ball, -0.1)
+        goal_pos = get_goal_position(client, ball, team, data)
+        target = get_shoot_position(goal_pos, ball, -0.15)
 
-    data.shooter.goto(target, wait=False)
-    if is_inside_circle(data.shooter.position, data.ball, 0.13) and faces_ball(data.shooter, data.ball, 15):
-        if time.time() - data.last_kick > 1:
-            data.shooter.kick(1)
-            data.last_kick = time.time()
+    shooter.goto(target, wait=False)
+    if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):
+        if time.time() - data["last_kick"] > 1:
+            shooter.kick(1)
+            data["last_kick"] = time.time()
 
 
 if __name__ == "__main__":
-    start_client(ShooterData, shooter_update)
+    start_client(shooter_update, number=1, data_dict=get_shooter_dict())

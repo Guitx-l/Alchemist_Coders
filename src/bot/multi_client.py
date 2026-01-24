@@ -1,9 +1,8 @@
 import rsk
-from typing import Literal
-from src.bot import BotData, can_play
-from src.bot.shooter import ShooterData, shooter_update
-from src.bot.goalkeeper import GoalKeeperData, goalkeeper_update
-
+from src.util.log import getLogger
+from src.bot import can_play, get_goal_sign
+from src.bot.shooter import shooter_update, get_shooter_dict
+from src.bot.goalkeeper import goalkeeper_update, get_keeper_dict
 
 def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball) -> bool:
     bot = client.robots[team][number]
@@ -14,19 +13,15 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball)
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 
-class MultiBotData(BotData):
-    def __init__(self, client: rsk.Client, team: Literal['green', 'blue'], number: Literal[1, 2]) -> None:
-        super().__init__(client, team)
-        self.number = number
-        self.shooter_data = ShooterData(self.client, self.team)
-        self.keeper_data = GoalKeeperData(self.client, self.team)
+def get_multi_bot_dict() -> dict:
+    return {
+        "shooter_data": get_shooter_dict(),
+        "keeper_data": get_keeper_dict(),
+        "logger": getLogger("multi_client"),
+    }
 
-        self.shooter_data.shooter = self.client.robots[self.team][self.number]
-        self.keeper_data.keeper = self.client.robots[self.team][self.number]
-
-
-def multi_update(data: MultiBotData) -> None:
-    if is_shooter(data.client, data.team, data.number, data.goal_sign(), data.ball):
-        shooter_update(data.shooter_data)
+def multi_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
+    if is_shooter(client, team, number, get_goal_sign(client, team), client.ball):
+        shooter_update(client, team, number, data['shooter_data'])
     else:
-        goalkeeper_update(data.keeper_data)
+        goalkeeper_update(client, team, number, data['keeper_data'])

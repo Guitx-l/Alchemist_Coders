@@ -4,6 +4,7 @@ __pycache__
 /backups/
 *.ipynb
 .worktrees/*
-.worktrees/587821f
+.worktrees/test/
 .gitignore
+.vscode
 src.zip

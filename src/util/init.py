@@ -19,9 +19,10 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
 
 def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], number: int, data_dict: dict) -> None:
     """
-    Takes one class/function/object returning a BotData object and runs update_func automatically without any further intervention, even during the halftime.
-    :param ClientClass: Callable returning BotData type object.
-    :param update_func: function that will be called every "frame" with the BotData object as argument.
+    :description: Takes one class/function/object returning a data_dict and runs update_func automatically without any further intervention, even during the halftime.
+    :param update_func: function that will be called every "frame" with the data_dict object as argument.
+    :param number: number of the robot to control (1 or 2)
+    :param data_dict: dictionary that will be passed to the update_func as data argument
     """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
     logger = getLogger("client_loader")

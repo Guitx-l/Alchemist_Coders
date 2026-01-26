@@ -4,6 +4,8 @@ import math
 import random
 import logging
 import numpy as np
+import collections
+from src.util.log import getLogger
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import get_ball, get_goal_sign
 from src.util.init import start_client
@@ -13,7 +15,7 @@ def get_shooter_dict() -> dict:
     return {
         "last_kick": time.time(),
         "goal_pos": np.array([0.0, 0.0]),
-        "logger": logging.getLogger("shooter"),
+        "logger": getLogger("shooter"),
         "last_ball_overlap": time.time(),
     }
 
@@ -60,12 +62,13 @@ def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dic
         return data["goal_pos"]
 
 
-def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
+def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> None: # average fps = 90
     logger: logging.Logger = data["logger"]
     shooter: rsk.client.ClientRobot = client.robots[team][number]
     ball: array_type = get_ball(client)
     goal_sign: int = get_goal_sign(client, team)
     goal_pos: array_type = data["goal_pos"]
+
     goal_pos[0] = 0.92 * goal_sign
     target = shooter.pose.copy()
     
@@ -95,10 +98,10 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
         or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, 15))
     ):
         goal_pos = get_goal_position(client, ball, team, data)
-        target = get_shoot_position(goal_pos, ball, 0.15)
+        target = get_shoot_position(goal_pos, ball, 0.2)
     else:
         goal_pos = get_goal_position(client, ball, team, data)
-        target = get_shoot_position(goal_pos, ball, -0.15)
+        target = get_shoot_position(goal_pos, ball, -0.2)
 
     shooter.goto(target, wait=False)
     if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):

@@ -73,6 +73,7 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) ->
     elif (
         no_shooter
         and (ball[0] * goal_sign < 0.2)
+        # if the teammate is close to the ball
         and not (not np.linalg.norm(ball - team_mate.position) > 0.3 and can_play(team_mate, client.referee)) 
     ):
         target_x, target_y = ball

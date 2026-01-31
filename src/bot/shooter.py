@@ -4,7 +4,6 @@ import math
 import random
 import logging
 import numpy as np
-import collections
 from src.util.log import getLogger
 from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import get_ball, get_goal_sign

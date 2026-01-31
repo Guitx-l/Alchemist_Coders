@@ -1,7 +1,7 @@
 import rsk
 import sys
 import argparse
-from typing import Literal, Callable
+from typing import Callable
 from .log import getLogger
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
@@ -19,7 +19,7 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
 
 def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], number: int, data_dict: dict) -> None:
     """
-    :description: Takes one class/function/object returning a data_dict and runs update_func automatically without any further intervention, even during the halftime.
+    :description: Takes one class/function/object returning a data_dict and runs update_func automatically without any further intervention.
     :param update_func: function that will be called every "frame" with the data_dict object as argument.
     :param number: number of the robot to control (1 or 2)
     :param data_dict: dictionary that will be passed to the update_func as data argument
@@ -28,6 +28,8 @@ def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], numb
     logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
     team = arguments.team
+    if 'logger' not in data_dict.keys():
+        data_dict['logger'] = logger
 
     with rsk.Client(host=arguments.host, key=arguments.key) as client:  # tkt c un bordel mais touche pas ca marche nickel
         while True:

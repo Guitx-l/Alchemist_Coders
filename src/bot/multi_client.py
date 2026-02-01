@@ -1,6 +1,6 @@
 import rsk
 from src.util.log import getLogger
-from src.bot import can_play, get_goal_sign
+from src.bot import can_play, get_goal_sign, get_ball
 from src.bot.shooter import shooter_update, get_shooter_dict
 from src.bot.goalkeeper import goalkeeper_update, get_keeper_dict
 
@@ -22,7 +22,7 @@ def get_multi_bot_dict() -> dict:
     }
 
 def multi_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
-    if is_shooter(client, team, number, get_goal_sign(client, team), client.ball):
+    if is_shooter(client, team, number, get_goal_sign(client, team), get_ball(client)):
         shooter_update(client, team, number, data['shooter_data'])
     else:
         goalkeeper_update(client, team, number, data['keeper_data'])

@@ -5,7 +5,7 @@ import random
 import logging
 import numpy as np
 from src.util.log import getLogger
-from src.util.math import angle_of, normalized, line_intersects_circle, get_alignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
+from src.util.math import angle_of, normalized, line_intersects_circle, get_misalignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
 from src.bot import get_ball, get_goal_sign
 from src.util.init import start_client
 
@@ -68,11 +68,11 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
     goal_sign: int = get_goal_sign(client, team)
     goal_pos: array_type = data["goal_pos"]
 
-    goal_pos[0] = 0.92 * goal_sign
-    target = shooter.pose.copy()
-    
     if shooter.pose is None or evade_ball_abuse(shooter, ball, data):
         return
+
+    goal_pos[0] = 0.92 * goal_sign
+    target = shooter.pose.copy()
     
     if client.referee['game_paused']:
         data['last_ball_overlap'] = time.time()
@@ -93,18 +93,21 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
     elif (
-        get_alignment(shooter.position, ball, goal_pos) > math.radians(25) 
+        get_misalignment(shooter.position, ball, goal_pos) > math.radians(25) 
         or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, 15))
     ):
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, 0.2)
+        logger.debug("Repositioning...")
     else:
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, -0.2)
+        logger.debug("")
 
     shooter.goto(target, wait=False)
     if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):
         if time.time() - data["last_kick"] > 1:
+            logger.debug("Kicking...")
             shooter.kick(1)
             data["last_kick"] = time.time()
 

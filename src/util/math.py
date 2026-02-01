@@ -86,7 +86,7 @@ def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offse
     )
 
 
-def get_alignment(pos1: array_type, pos2: array_type, base: array_type) -> float:
+def get_misalignment(pos1: array_type, pos2: array_type, base: array_type) -> float:
     """
     :description: Calculates the angle between the vectors base->pos1 and base->pos2
     :param pos1: Position of the first point

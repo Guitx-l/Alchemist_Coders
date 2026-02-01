@@ -6,7 +6,7 @@ import numpy as np
 import src.util.math as math_util
 from src.util.log import getLogger
 from src.util import array_type
-from src.bot import can_play, get_goal_sign, get_ball
+from src.bot import can_play, get_goal_sign, get_ball, get_robot
 from src.util.init import start_client
 
 
@@ -36,8 +36,8 @@ def is_inside_defense_zone(point: array_type, goal_sign: int) -> bool:
 
 def get_opposing_shooter(client: rsk.Client, team: str, ball: array_type) -> rsk.client.ClientRobot:
         opposing_team = "blue" if team == "green" else "green"
-        opp_1 = client.robots[opposing_team][1]
-        opp_2 = client.robots[opposing_team][2]
+        opp_1 = get_robot(client, opposing_team, 1)
+        opp_2 = get_robot(client, opposing_team, 2)
 
         if np.linalg.norm(opp_1.position - ball) < np.linalg.norm(opp_2.position - ball):
             return opp_1
@@ -45,7 +45,7 @@ def get_opposing_shooter(client: rsk.Client, team: str, ball: array_type) -> rsk
 
 
 def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
-    keeper: rsk.client.ClientRobot = client.robots[team][number]
+    keeper = get_robot(client, team, number)
     goal_sign = get_goal_sign(client, team)
     strategy = Strategy.NONE
     ball = get_ball(client)
@@ -53,15 +53,12 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) ->
     target_x = -0.92 * goal_sign
     target_y = keeper.position[1]
     
-    if keeper.pose is None:
-        return
-    
     if not math_util.is_inside_court(ball):
         keeper.goto(keeper.pose)
         return
 
     opp_shooter = get_opposing_shooter(client, team, ball)
-    team_mate = client.robots[team][3 - keeper.number] # 3 - 1 = 2 and 3 - 2 = 1
+    team_mate = get_robot(client, team, 3 - number) # 3 - 1 = 2 and 3 - 2 = 1
     goal_post_x = -0.92 * goal_sign
     no_shooter = np.linalg.norm(ball - opp_shooter.position) > 0.18
 
@@ -83,7 +80,7 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) ->
         target_y = opp_shooter.pose[1] + (math.tan(opp_shooter.pose[2]) * (goal_post_x - opp_shooter.pose[0]))
         strategy = Strategy.TAN_SHOOTER
 
-    elif math_util.get_alignment(np.array([target_x, target_y]), ball, opp_shooter.position) < 10:
+    elif math_util.get_misalignment(np.array([target_x, target_y]), ball, opp_shooter.position) < 10:
         target_y = ball[1] + (ball[1] - opp_shooter.pose[1]) / (ball[0] - opp_shooter.pose[0]) * (goal_post_x - ball[0])
         strategy = Strategy.THALES_SHOOTER
 

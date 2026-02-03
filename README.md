@@ -45,10 +45,10 @@ Ce dépôt contient un programme complet contenant des comportemements et des st
 
 
 ## Structure du dépôt
-- src/  
-  - bot/ — shooter, gardien, multi-client et autres auxiliaires  
-  - util/ — math, logging, démarrage du client  
-  - __main__.py — point d'entrée exemple qui lance les deux robots
+- [src/](src/) — code source principal
+  - [bot](src/bot/) — shooter, gardien, multi-client et autres auxiliaires  
+  - [util/](src/util/) — math, logging, démarrage du client  
+  - [`__main__.py`](src/__main__.py) — point d'entrée exemple qui lance les deux robots
 
 
 ## Exécution du projet
@@ -58,11 +58,25 @@ python ./src --host 127.0.0.1 --key <KEY> --team {blue, green}
 ```
 _Voir la documentation de la bibliothèque pour plus d'informations._
 
-## Fonctionnement général
 
-- Architecture principale  
-  Le programme est organisé autour de fonctions d'update appelées en boucle par start_client. Chaque bot est exécuté avec la signature:
-  update_func(client, team, number, data_dict)
+## Fonctionnement général - résumé
+- Le code est organisé autour de fonctions d'update appelées en boucle par `start_client`
+- L'état est stocké dans des dicts simples retournés par des helpers:
+  - `get_shooter_dict()`
+  - `get_keeper_dict()`
+  - `get_multi_bot_dict()`
+- Les fonctions d'update utilisent des paramètres explicites: (client, team, number, data_dict)
+- Helpers disponibles:
+  - `get_ball(client)` 
+  - `get_robot(client, team, number)`
+  - `get_goal_sign(client, team)`
+- Cela rend les fonctions petites, explicites et faciles à tester.
+
+
+## Fonctionnement général - détaillé
+- Architecture principale     
+  Le programme est organisé autour de fonctions d'update appelées en boucle par `start_client()`. Chaque bot est exécuté avec la signature:
+  `update_func(client, team, number, data_dict)`
   où:
   - client: connexion au simulateur / robot
   - team: "blue" ou "green"
@@ -70,30 +84,29 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
   - data_dict: dictionnaire d'état fourni par get_*_dict()
 
 - Démarrage des clients  
-  Utiliser start_client(update_func, number, data_dict) pour lancer un client. __main__.py montre un exemple qui lance deux threads (un pour chaque robot).
+  Utiliser `start_client(update_func, number, data_dict)` pour lancer un client. `__main__.py` montre un exemple qui lance deux threads (un pour chaque robot).
 
 - Gestion de l'état  
-  L'état des comportements est stocké dans de simples dicts (get_shooter_dict(), get_keeper_dict(), get_multi_bot_dict()).
+  L'état des comportements est stocké dans de simples dicts (`get_shooter_dict()`, `get_keeper_dict()`, `get_multi_bot_dict()`).
 
 - Décision multi-robot  
-  multi_update choisit si un robot agit comme shooter ou goalkeeper en appelant is_shooter(client, team, number, goal_sign, ball). La sélection se base sur les positions relatives et l'état du jeu.
+  `multi_update()` choisit si un robot agit comme shooter ou goalkeeper en appelant `is_shooter(client, team, number, goal_sign, ball)`. La sélection se base sur les positions relatives et l'état du jeu.
 
 - Comportements principaux  
-  - shooter_update : positionne le robot pour tirer et gère l'évitement du "ball abuse", le positionnement de tir et l'action de kick.  
-  - goalkeeper_update : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements/kicks si nécessaire.
+  - `shooter_update()` : positionne le robot pour tirer et gère l'évitement du "ball abuse", le positionnement de tir et l'action de kick.  
+  - `goalkeeper_update()` : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements/kicks si nécessaire.
 
 - Helpers utilitaires  
   Fonctions utiles disponibles pour simplifier l'accès aux données :
-  - get_ball(client) : retourne la position actuelle de la balle (copie).
-  - get_robot(client, team, number) : retourne le robot et vérifie qu'il a une position.
-  - get_goal_sign(client, team) : signe du but selon l'orientation de l'équipe.
+  - `get_ball(client)` : retourne la position actuelle de la balle (copie).
+  - `get_robot(client, team, number)` : retourne le robot et vérifie qu'il a une position.
+  - `get_goal_sign(client, team)` : signe du but selon l'orientation de l'équipe.
   Ces helpers réduisent le nombre d'accès directs à client.robots et clarifient le flux de données.
 
 - Robustesse et erreurs  
-  start_client intercepte les exceptions rsk.client.ClientError et logge proprement les erreurs. Les fonctions d'update doivent lever ces erreurs si des éléments critiques (ex. position de la balle ou du robot) sont manquants.
-
+  `start_client()` intercepte les exceptions `rsk.client.ClientError` et logge proprement les erreurs. Les fonctions d'update doivent lever ces erreurs si des éléments critiques (ex. position de la balle ou du robot) sont manquants.
 - Conseils pour débutants  
-  - Lire d'abord les get_*_dict() pour comprendre quelles clés sont attendues dans data_dict.  
+  - Lire d'abord les `get_*_dict()` pour comprendre quelles clés sont attendues dans data_dict.  
   - Tester chaque update en isolant client simulé / fixtures unitaires.  
   - Ajouter des petites docstrings et logs si un comportement semble obscur.
 
@@ -105,15 +118,5 @@ from src.util.init import start_client
 start_client(multi_update, number=1, data_dict=get_multi_bot_dict())
 ```
 
-## Notes d'architecture (pour débutants)
-- L'état est stocké dans des dicts simples retournés par des helpers:
-  - get_shooter_dict()
-  - get_keeper_dict()
-  - get_multi_bot_dict()
-- Les fonctions d'update utilisent des paramètres explicites: (client, team, number, data_dict)
-- Helpers disponibles:
-  - get_ball(client) 
-  - get_robot(client, team, number)
-  - get_goal_sign(client, team)
-- Cela rend les fonctions petites, explicites et faciles à tester.
+
 

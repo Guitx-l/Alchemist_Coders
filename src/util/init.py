@@ -4,6 +4,7 @@ import argparse
 from typing import Callable
 from .log import getLogger
 
+
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
     :param desc: description of the parser
@@ -16,6 +17,7 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
     parser.add_argument('-k', '--key', type=str, default="", help="key of the client, empty by default")
     parser.add_argument('-v', '--verbose', action='store_true', help="if specified, the client will print all the warnings, not only the important ones")
     return parser
+
 
 def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], number: int, data_dict: dict) -> None:
     """

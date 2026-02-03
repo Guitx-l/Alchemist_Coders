@@ -1,13 +1,13 @@
 import rsk
 from src.util.log import getLogger
-from src.bot import can_play, get_goal_sign, get_ball
+from src.bot import can_play, get_goal_sign, get_ball, get_robot
 from src.bot.shooter import shooter_update, get_shooter_dict
 from src.bot.goalkeeper import goalkeeper_update, get_keeper_dict
 
 
 def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball) -> bool:
-    bot = client.robots[team][number]
-    other_bot = client.robots[team][3 - number]
+    bot = get_robot(client, team, number)
+    other_bot = get_robot(client, team, 3 - number)
 
     if not can_play(other_bot, client.referee):
         return ball[0] * goal_sign > 0

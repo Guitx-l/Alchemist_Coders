@@ -26,7 +26,7 @@ Ce dépôt contient un programme complet contenant des comportemements et des st
 
 # Installation 
 - cloner le dépot
-- installer python [3.12; 3.13]
+- installer python 3.12 ou 3.13
 - installer la bibliothèque rsk:
     - sans game-controller:
         ```bash
@@ -45,9 +45,9 @@ Ce dépôt contient un programme complet contenant des comportemements et des st
 
 
 ## Structure du dépôt
-- [src/](src/) — code source principal
-  - [bot](src/bot/) — shooter, gardien, multi-client et autres auxiliaires  
-  - [util/](src/util/) — math, logging, démarrage du client  
+- [`src/`](src/) — code source principal
+  - [`bot`](src/bot/) — shooter, gardien, multi-client et autres auxiliaires  
+  - [`util/`](src/util/) — math, logging, démarrage du client  
   - [`__main__.py`](src/__main__.py) — point d'entrée exemple qui lance les deux robots
 
 
@@ -60,7 +60,7 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
 
 
 ## Fonctionnement général - résumé
-- Le code est organisé autour de fonctions d'update appelées en boucle par `start_client`
+- Le code est organisé autour de fonctions d'update appelées en boucle par `start_client()`
 - L'état est stocké dans des dicts simples retournés par des helpers:
   - `get_shooter_dict()`
   - `get_keeper_dict()`
@@ -74,7 +74,7 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
 
 
 ## Fonctionnement général - détaillé
-- Architecture principale     
+- Architecture principale:     
   Le programme est organisé autour de fonctions d'update appelées en boucle par `start_client()`. Chaque bot est exécuté avec la signature:
   `update_func(client, team, number, data_dict)`
   où:
@@ -83,29 +83,29 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
   - number: numéro du robot (1 ou 2)
   - data_dict: dictionnaire d'état fourni par get_*_dict()
 
-- Démarrage des clients  
-  Utiliser `start_client(update_func, number, data_dict)` pour lancer un client. `__main__.py` montre un exemple qui lance deux threads (un pour chaque robot).
+- Démarrage des clients:  
+  Utiliser `start_client(update_func, number, data_dict)` pour lancer un client. `__main__.py` montre un [exemple](src/__main__.py) qui lance deux threads (un pour chaque robot).
 
-- Gestion de l'état  
-  L'état des comportements est stocké dans de simples dicts (`get_shooter_dict()`, `get_keeper_dict()`, `get_multi_bot_dict()`).
+- Gestion de l'état:  
+  L'état des comportements est stocké dans de simples dictionnaires (`get_shooter_dict()`, `get_keeper_dict()`, `get_multi_bot_dict()`).
 
-- Décision multi-robot  
+- Décision multi-robot:  
   `multi_update()` choisit si un robot agit comme shooter ou goalkeeper en appelant `is_shooter(client, team, number, goal_sign, ball)`. La sélection se base sur les positions relatives et l'état du jeu.
 
-- Comportements principaux  
+- Comportements principaux:  
   - `shooter_update()` : positionne le robot pour tirer et gère l'évitement du "ball abuse", le positionnement de tir et l'action de kick.  
   - `goalkeeper_update()` : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements/kicks si nécessaire.
 
-- Helpers utilitaires  
+- Helpers utilitaires:  
   Fonctions utiles disponibles pour simplifier l'accès aux données :
   - `get_ball(client)` : retourne la position actuelle de la balle (copie).
   - `get_robot(client, team, number)` : retourne le robot et vérifie qu'il a une position.
   - `get_goal_sign(client, team)` : signe du but selon l'orientation de l'équipe.
   Ces helpers réduisent le nombre d'accès directs à client.robots et clarifient le flux de données.
 
-- Robustesse et erreurs  
+- Robustesse et erreurs:  
   `start_client()` intercepte les exceptions `rsk.client.ClientError` et logge proprement les erreurs. Les fonctions d'update doivent lever ces erreurs si des éléments critiques (ex. position de la balle ou du robot) sont manquants.
-- Conseils pour débutants  
+- Conseils pour débutants:  
   - Lire d'abord les `get_*_dict()` pour comprendre quelles clés sont attendues dans data_dict.  
   - Tester chaque update en isolant client simulé / fixtures unitaires.  
   - Ajouter des petites docstrings et logs si un comportement semble obscur.

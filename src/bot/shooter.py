@@ -68,7 +68,7 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
     goal_sign: int = get_goal_sign(client, team)
     goal_pos: array_type = data["goal_pos"]
 
-    if shooter.pose is None or evade_ball_abuse(shooter, ball, data):
+    if evade_ball_abuse(shooter, ball, data):
         return
 
     goal_pos[0] = 0.92 * goal_sign
@@ -102,7 +102,7 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
     else:
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, -0.2)
-        logger.debug("")
+        logger.debug("Going straight at ball...")
 
     shooter.goto(target, wait=False)
     if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):

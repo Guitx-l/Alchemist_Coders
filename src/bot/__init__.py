@@ -29,7 +29,7 @@ def is_inside_defense_zone(goal_sign: int, pos: Sequence[float]) -> bool:
 
 def get_robot(client: rsk.Client, team: str, number: int) -> rsk.client.ClientRobot:
     robot = client.robots[team][number]
-    if not robot.has_position():
+    if not robot.has_position(skip_old=True):
         raise rsk.client.ClientError(f"#Impossible de trouver le robot {team}{number}.")
     return robot
 

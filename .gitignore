@@ -3,9 +3,10 @@
 __pycache__
 /backups/
 *.ipynb
-.worktrees/*
-.worktrees/test/
+.worktrees
 .gitignore
 .vscode
 src.zip
 .other
+ball_graph.csv
+ball_plot.png

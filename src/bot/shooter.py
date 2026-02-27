@@ -4,11 +4,11 @@ import math
 import random
 import logging
 import numpy as np
-from src.bot import get_robot
+from src.util import array_type
 from src.util.log import getLogger
-from src.util.math import angle_of, normalized, line_intersects_circle, get_misalignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
-from src.bot import get_ball, get_goal_sign, get_robot
 from src.util.init import start_client
+from src.util.math import angle_of, normalized, line_intersects_circle, get_misalignment, get_shoot_position, faces_ball, is_inside_circle, is_inside_court
+from src.bot import get_ball, get_goal_sign, get_robot
 
 
 def get_shooter_dict() -> dict:

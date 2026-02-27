@@ -1,6 +1,7 @@
 import sys
 import threading
-sys.path.append(".")
+from os.path import dirname, abspath
+sys.path.append(dirname(dirname(abspath(__file__))))
 from src.util.init import start_client
 from src.bot.multi_client import get_multi_bot_dict, multi_update
 

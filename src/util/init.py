@@ -7,9 +7,9 @@ from .log import getLogger
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
-    :param desc: description of the parser
-    :return: an argparse parser that can be used to launch more easily the program, run get_parser().print_help()
-    or check the argparse docs for more info
+    :param desc: description du parseur
+    :return: un parseur argparse qui peut être utilisé pour lancer plus facilement le programme, exécuter get_parser().print_help()
+    ou consulter la documentation argparse pour plus d'informations
     """
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-t', '--team', type=str, choices=('blue', 'green'), default='blue', help="team of the shooter (either 'blue' as default or 'green')")
@@ -21,10 +21,10 @@ def get_parser(desc: str) -> argparse.ArgumentParser:
 
 def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], number: int, data_dict: dict) -> None:
     """
-    :description: Takes one class/function/object returning a data_dict and runs update_func automatically without any further intervention.
-    :param update_func: function that will be called every "frame" with the data_dict object as argument.
-    :param number: number of the robot to control (1 or 2)
-    :param data_dict: dictionary that will be passed to the update_func as data argument
+    :description: Prend une classe/fonction/objet retournant un data_dict et exécute update_func automatiquement sans intervention supplémentaire.
+    :param update_func: fonction qui sera appelée à chaque "frame" avec l'objet data_dict comme argument.
+    :param number: numéro du robot à contrôler (1 ou 2)
+    :param data_dict: dictionnaire qui sera passé à update_func comme argument
     """
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
     logger = getLogger("client_loader")

@@ -4,9 +4,10 @@ import math
 import random
 import logging
 import numpy as np
+from src.bot import get_robot
 from src.util.log import getLogger
 from src.util.math import angle_of, normalized, line_intersects_circle, get_misalignment, get_shoot_position, faces_ball, array_type, is_inside_circle, is_inside_court
-from src.bot import get_ball, get_goal_sign
+from src.bot import get_ball, get_goal_sign, get_robot
 from src.util.init import start_client
 
 
@@ -28,10 +29,10 @@ def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: di
         if time.time() - data['last_ball_overlap'] > 2.5:
             pos = normalized(shooter.position - ball) * rsk.constants.timed_circle_radius + shooter.position
             if is_inside_court(pos):
-                t = (pos[0], pos[1], shooter.orientation)
+                target = (pos[0], pos[1], shooter.orientation)
             else:
-                t = (*(normalized(-ball) * 0.3 + ball), shooter.orientation)
-            shooter.goto(t, wait=False)
+                target = (*(normalized(-ball) * 0.3 + ball), shooter.orientation)
+            shooter.goto(target, wait=False)
             return True
     else:
         data['last_ball_overlap'] = time.time()
@@ -63,7 +64,7 @@ def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dic
 
 def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> None: # average fps = 90
     logger: logging.Logger = data["logger"]
-    shooter: rsk.client.ClientRobot = client.robots[team][number]
+    shooter: rsk.client.ClientRobot = get_robot(client, team, number)
     ball: array_type = get_ball(client)
     goal_sign: int = get_goal_sign(client, team)
     goal_pos: array_type = data["goal_pos"]
@@ -98,11 +99,9 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
     ):
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, 0.2)
-        logger.debug("Repositioning...")
     else:
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, -0.2)
-        logger.debug("Going straight at ball...")
 
     shooter.goto(target, wait=False)
     if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):

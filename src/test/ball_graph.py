@@ -8,11 +8,11 @@ import pathlib
 import matplotlib.pyplot as plt
 
 
-POLLING_RATE = 60
+POLLING_RATE = 1
 STRAIGHTEN = 1
 SAVE_GRAPH = False
 REMOVE_PREVIOUS_DATA = False
-DATA_FILE = pathlib.Path("./ball_graph.csv")
+DATA_FILE = pathlib.Path("./data/ball_graph.csv")
 
 
 def valid_path(path_str: str) -> pathlib.Path:
@@ -36,8 +36,8 @@ def positive_int(value: str) -> int:
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser("Programme qui permet d'afficher ou de sauvegarder la position de la balle en fonction du temps")
     parser.add_argument('-m', '--mode', choices=['display', 'save'], help="Action réalisée par le script, soit 'display' pour afficher les infos de la balle, ou 'save' pour les sauvegarder")
-    parser.add_argument('-s', '--straighten', type=positive_int, default=STRAIGHTEN, help="Degré de \"lissage\" lors de l'affichement des données")
-    parser.add_argument('-S', '--save', type=valid_path, default=None, help="Si précisé, le graphique sera sauvegardé dans un fichier, sinon, le graphique ne sera pas sauvegardé")
+    #parser.add_argument('-s', '--straighten', type=positive_int, default=STRAIGHTEN, help="Degré de \"lissage\" lors de l'affichement des données")
+    parser.add_argument('-S', '--save', type=valid_path, default=None, help="Si précisé, le graphique sera sauvegardé dans le fichier précisé, sinon, le graphique ne sera pas sauvegardé")
     parser.add_argument('-p', '--polling_rate', type=positive_int, default=POLLING_RATE, help="Nombre de fois où les positions de balle sont sauvegardées par seconde")
     parser.add_argument('-d', '--data', type=valid_path, default=DATA_FILE, help="Chemin du fichier csv qui contient les données")
     parser.add_argument('-r', '--remove', action="store_true", default=REMOVE_PREVIOUS_DATA, help="Supprime toutes les données précédentes  du fichier lors de l'écriture")
@@ -60,12 +60,12 @@ def save_data(csv_file_path: pathlib.Path, polling_rate: int, remove: bool = Fal
                     time.time(),
                     client.ball[0], 
                     client.ball[1],
-                    1 if client.referee['game_is_running'] else 0
+                    0 if client.referee['game_paused'] else 1
                 ])
                 time.sleep(update_period)
             
 
-def display_data(straightening_level: int, output_path: pathlib.Path | None, csv_file_path: pathlib.Path) -> None:
+def display_data(output_path: pathlib.Path | None, csv_file_path: pathlib.Path) -> None:
     data = np.loadtxt(csv_file_path, delimiter=",")
 
     first_timestamp = data[0, 0]
@@ -76,14 +76,19 @@ def display_data(straightening_level: int, output_path: pathlib.Path | None, csv
     ball_dx = np.diff(data[:, 1]) 
     ball_dy = np.diff(data[:, 2]) 
     game_is_running = data[:, 3]
-    speed = np.sqrt(ball_dx**2 + ball_dy**2) / np.diff(timestamps)
+    speed = np.linalg.norm(np.column_stack((ball_dx, ball_dy)), axis=1) / np.diff(timestamps)
+    max_speed = np.max(speed)
 
+    print(np.unique(game_is_running, return_counts=True))
     plt.figure(figsize=(10, 5))
     plt.plot(timestamps[:-1], speed * 3.6, label="Vitesse totale de la balle")
+    plt.plot(timestamps[1:-1], np.diff(speed) / np.diff(timestamps[:-1]), label="Accélération de la balle")
+    plt.fill_between(timestamps[:-1], 0, max_speed * 3.6, where=(game_is_running[:-1] == 0), color='red', alpha=0.3, label="Jeu en pause")
     plt.xlabel("Temps (s)")
     plt.ylabel("Vitesse (km/h)")
     plt.title("Vitesse de la balle en fonction du temps")
     plt.grid(True)
+    plt.legend()
 
     if output_path is not None:
         plt.savefig(output_path)
@@ -96,9 +101,9 @@ def main() -> None:
     arguments = get_parser().parse_args(sys.argv[1:])
     print(arguments)
     if arguments.mode == "display":
-        display_data(arguments.straighten, arguments.save, arguments.data)
+        display_data(arguments.save, arguments.data)
     else:
-        save_data(arguments.data, arguments.polling_rate, remove=arguments.remove)
+        save_data(arguments.data, arguments.polling_rate, arguments.remove)
 
 
 if __name__ == "__main__":

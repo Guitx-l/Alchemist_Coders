@@ -41,13 +41,14 @@ Ce dépôt contient un programme complet contenant des comportemements et des st
 
 - [Documentation de la librairie robot-soccer-kit](https://robot-soccer-kit.github.io/documentation)
 - [Dépôt github de la librairie robot-soccer-kit](https://github.com/robot-soccer-kit/robot-soccer-kit)
+ > Il est fortement recommandé de lire la documentation de la librairie pour comprendre les différentes fonctionnalités et comment les utiliser efficacement dans votre code.
 
 ## Structure du dépôt
 
 - [`src/`](src/) — code source principal
   - [`bot`](src/bot/) — shooter, gardien, multi-client et autres auxiliaires  
   - [`util/`](src/util/) — math, logging, démarrage du client  
-  - [`test/`](src/test/) — srcipt servant au débogage de différentes fonctionnalités, peut avoir des pépendances différentes
+  - [`test/`](src/test/) — srcipt servant au débogage de différentes fonctionnalités, peut avoir des dépendances différentes
   - [`__main__.py`](src/__main__.py) — point d'entrée du programme, exemple qui lance les deux robots
 
 ## Exécution du projet
@@ -62,10 +63,10 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
 ## Fonctionnement général - résumé
 
 - Le code est organisé autour de fonctions d'update appelées en boucle par `start_client()`
-- L'état est stocké dans des dicts simples retournés par des fonctions:
+- L'état est stocké dans des simples dictionnaires retournés par des fonctions:
   - `get_shooter_dict()`
   - `get_keeper_dict()`
-  - `get_multi_bot_dict()`
+  - `get_role_manager_dict()`
   - `...`
 - Les fonctions d'update utilisent des paramètres explicites: (client, team, number, data_dict)
 - Fonctions utilitaires disponibles:
@@ -89,14 +90,14 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
   Utiliser `start_client(update_func, number, data_dict)` pour lancer un client. `__main__.py` montre un [exemple](src/__main__.py) qui lance deux threads (un pour chaque robot).
 
 - <u>Gestion de l'état</u>:  
-  L'état des comportements est stocké dans de simples dictionnaires (`get_shooter_dict()`, `get_keeper_dict()`, `get_multi_bot_dict()`, ...).
+  L'état des comportements est stocké dans de simples dictionnaires (`get_shooter_dict()`, `get_keeper_dict()`, `get_role_manager_dict()`, ...).
 
 - <u>Décision multi-robot</u>:  
-  `multi_update()` choisit si un robot agit comme buteur ou un gardien en appelant `is_shooter(client, team, number, goal_sign, ball)`. La sélection se base sur les positions relatives et l'état du jeu.
+  `role_manager_update()` choisit si un robot agit comme buteur ou un gardien en appelant `is_shooter(client, team, number, goal_sign, ball)`. La sélection se base sur les positions relatives des robots et leur disponibilité.
 
 - <u>Comportements principaux</u>:  
   - `shooter_update()` : positionne le robot pour tirer et gère l'évitement de la règle du "ball abuse", le positionnement de tir et l'action de kick.  
-  - `goalkeeper_update()` : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements/kicks si nécessaire.
+  - `goalkeeper_update()` : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements si nécessaire.
 
 - <u>Fonctions utilitaires</u>:  
   Fonctions utiles disponibles pour simplifier l'accès aux données du client:
@@ -115,8 +116,8 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
 ## Exemple en code
 
 ```py
-from src.bot.multi_client import multi_update, get_multi_bot_dict
+from src.bot.role_manager import role_manager_update, get_role_manager_dict
 from src.util.init import start_client
 
-start_client(multi_update, number=1, data_dict=get_multi_bot_dict())
+start_client(role_manager_update, number=1, data_dict=get_role_manager_dict())
 ```

@@ -76,11 +76,11 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) ->
         target_x, target_y = ball
         strategy = Strategy.BALL_RUSH
 
-    elif math_util.faces_ball(opp_shooter, ball, 20):
+    elif math_util.faces_ball(opp_shooter, ball):
         target_y = opp_shooter.pose[1] + (math.tan(opp_shooter.pose[2]) * (goal_post_x - opp_shooter.pose[0]))
         strategy = Strategy.TAN_SHOOTER
 
-    elif math_util.get_misalignment(np.array([target_x, target_y]), ball, opp_shooter.position) < 10:
+    else:
         target_y = ball[1] + (ball[1] - opp_shooter.pose[1]) / (ball[0] - opp_shooter.pose[0]) * (goal_post_x - ball[0])
         strategy = Strategy.THALES_SHOOTER
 
@@ -97,14 +97,12 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, data: dict) ->
 
     ball_vector = keeper.position - ball
     ball_vector[0] = ball_vector[0] * goal_sign
-    if abs(math_util.angle_of(ball_vector)) < math.radians(100):
+    if abs(math_util.angle_of(ball_vector)) < math.radians(120):
         if keeper.pose[1] > ball[1]:
             target_x, target_y = ball + (math_util.normalized([-1 * goal_sign, 1]) * 0.25)
         else:
             target_x, target_y = ball + (math_util.normalized([-1 * goal_sign, -1]) * 0.25)
         strategy = Strategy.BALL_BEHIND
-
-    # TODO: Avoid collisions with teammates when near to target
 
     keeper.goto((target_x, target_y, math.pi if goal_sign == -1 else 0), wait=False)
 

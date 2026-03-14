@@ -24,8 +24,8 @@ def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 
 
 def is_inside_circle(point: array_type, center: array_type, radius: float) -> bool:
     """
-    :param point: Point à vérifier
-    :param center: Centre du cercle (x,y)
+    :param point: Point à vérifier, doit être un tableau numpy
+    :param center: Centre du cercle (x,y), doit être un tableau numpy
     :param radius: Rayon du cercle
     :return: True si le point est dans le cercle, sinon False
     """
@@ -72,7 +72,7 @@ def normalized(a: np.typing.ArrayLike) -> array_type:
     return np.array(a) / np.linalg.norm(a)
 
 
-def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offset: float = 1) -> tuple[float, float, float]:
+def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offset: float = 0) -> tuple[float, float, float]:
     """
     :param goal_pos: Position du but (x,y), doit être un tableau numpy
     :param ball_pos: Position du ballon (x,y), doit être un tableau numpy
@@ -89,17 +89,22 @@ def get_shoot_position(goal_pos: array_type, ball_pos: array_type, shooter_offse
         angle_of(-goal_to_ball_vector)
     )
 
+def get_angle_between(vector1: array_type, vector2: array_type) -> float:
+    """
+    :param vector1: Premier vecteur (x,y), doit être un tableau numpy
+    :param vector2: Deuxième vecteur (x,y), doit être un tableau numpy
+    :return: L'angle entre les deux vecteurs, entre 0 et +pi
+    """
+    return np.arccos(np.clip(np.dot(normalized(vector1), normalized(vector2)), -1.0, 1.0))
 
 def get_misalignment(pos1: array_type, pos2: array_type, base: array_type) -> float:
     """
-    :description: Calcule l'angle entre les vecteurs base->pos1 et base->pos2
-    :param pos1: Position du premier point
-    :param pos2: Position du deuxième point
-    :param base: Position du centre pour les calculs
-    :return: L'angle entre le vecteur base->pos1 et le vecteur base->pos2
+    :param pos1: Premier point (x,y), doit être un tableau numpy
+    :param pos2: Deuxième point (x,y), doit être un tableau numpy
+    :param base: Point de référence pour les deux autres points (x,y), doit être un tableau numpy
+    :return: L'angle entre les deux vecteurs formés par pos1-base et pos2-base, entre 0 et +pi
     """
     return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
-
 
 def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, center: array_type, radius: float) -> bool:
     """

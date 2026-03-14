@@ -38,5 +38,4 @@ def start_client(update_func: Callable[[rsk.Client, str, int, dict], None], numb
             try:
                 update_func(client, team, number, data_dict)
             except rsk.client.ClientError as e:
-                if arguments.verbose and str(e)[0] != "#":
                     data_dict['logger'].warning(e)

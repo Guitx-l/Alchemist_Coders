@@ -1,4 +1,5 @@
 import rsk
+import numpy as np
 from src.util.log import getLogger
 from src.bot import can_play, get_goal_sign, get_ball, get_robot
 from src.bot.shooter import shooter_update, get_shooter_dict
@@ -11,17 +12,22 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball)
 
     if not can_play(other_bot, client.referee):
         return ball[0] * goal_sign > 0
+    
+    if np.linalg.norm(bot.position - other_bot.position) < 0.1:
+        return bot.number == 1
+    
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 
-def get_multi_bot_dict() -> dict:
+def get_role_manager_dict() -> dict:
     return {
         "shooter_data": get_shooter_dict(),
         "keeper_data": get_keeper_dict(),
-        "logger": getLogger("multi_client"),
+        "logger": getLogger("role_manager"),
     }
 
-def multi_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
+
+def role_manager_update(client: rsk.Client, team: str, number: int, data: dict) -> None:
     if is_shooter(client, team, number, get_goal_sign(client, team), get_ball(client)):
         shooter_update(client, team, number, data['shooter_data'])
     else:

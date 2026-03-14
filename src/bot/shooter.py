@@ -7,7 +7,7 @@ import numpy as np
 from src.util import array_type
 from src.util.log import getLogger
 from src.util.init import start_client
-from src.util.math import angle_of, normalized, line_intersects_circle, get_misalignment, get_shoot_position, faces_ball, is_inside_circle, is_inside_court
+from src.util.math import angle_of, normalized, line_intersects_circle, get_shoot_position, faces_ball, is_inside_circle, is_inside_court, get_angle_between
 from src.bot import get_ball, get_goal_sign, get_robot
 
 
@@ -41,8 +41,8 @@ def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: di
 
 def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dict) -> array_type:
         i = 0
-        opp_robot_1 = client.robots["green" if team == "blue" else "blue"][1]
-        opp_robot_2 = client.robots["green" if team == "blue" else "blue"][2]
+        opp_robot_1 = get_robot(client, "green" if team == "blue" else "blue", 1)
+        opp_robot_2 = get_robot(client, "green" if team == "blue" else "blue", 2)
         new_goal_pos = data["goal_pos"].copy()
         modified = False
 
@@ -93,20 +93,22 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
         target = (pos[0], pos[1], angle_of(ball - pos))
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
+    # get_misalignment(shooter.position, ball, goal_pos) > math.radians(25)
     elif (
-        get_misalignment(shooter.position, ball, goal_pos) > math.radians(25) 
-        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, 15))
+        get_angle_between(shooter.position - goal_pos, ball - goal_pos) > math.radians(25)
+        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball))
     ):
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, 0.2)
     else:
         goal_pos = get_goal_position(client, ball, team, data)
-        target = get_shoot_position(goal_pos, ball, -0.2)
+        target = get_shoot_position(goal_pos, ball, -0)
 
     shooter.goto(target, wait=False)
-    if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball, 15):
+    if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball):
         if time.time() - data["last_kick"] > 1:
             logger.debug("Kicking...")
+            shooter.goto(get_shoot_position(goal_pos, ball, -0.3))
             shooter.kick(1)
             data["last_kick"] = time.time()
 

@@ -1,10 +1,10 @@
 import rsk
 import time
-from typing import Callable
+from src.util import update_function_type
 from src.util.log import getLogger
 
 
-def get_rate_limiter_dict(sub_client_dict: dict = {}, sub_client_update_func: Callable[[rsk.Client, str, int, dict], None] = lambda *x: None, refresh_rate: float = 60) -> dict:
+def get_rate_limiter_dict(sub_client_dict: dict = {}, sub_client_update_func: update_function_type = lambda *x: None, refresh_rate: float = 60) -> dict:
     return {
         "logger": getLogger("rate_limiter"),
         "client_data": sub_client_dict,
@@ -15,12 +15,12 @@ def get_rate_limiter_dict(sub_client_dict: dict = {}, sub_client_update_func: Ca
     }
 
 
-def rate_limiter_update(client: rsk.Client, team: str, number: int, data: dict):
+def rate_limiter_update(client: rsk.Client, team: str, number: int, goal_sign: int, ball, data: dict):
     client_data = data['client_data']
     client_update_func = data['client_update']
 
     if not data["client_updated"]:
-        client_update_func(client, team, number, client_data)
+        client_update_func(client, team, number, goal_sign, ball, client_data)
         data["client_updated"] = True
 
     if (time.time() - data["last_timestamp"]) > data["update_period"]:

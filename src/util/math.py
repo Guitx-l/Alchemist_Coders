@@ -4,6 +4,10 @@ import numpy as np
 from typing import Sequence
 from src.util import array_type
 
+HALF_FIELD_LENGTH = rsk.constants.field_length / 2
+HALF_FIELD_WIDTH = rsk.constants.field_width / 2
+HALF_DEFENSE_AREA_WIDTH = rsk.constants.defense_area_width / 2
+
 
 def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 0.02) -> bool:
     """
@@ -15,10 +19,12 @@ def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 
         plus le rayon du ballon
     :return: True si le robot est orienté vers le ballon dans la limite de la marge donnée, sinon False
     """
+    cos_o = math.cos(robot.orientation)
+    sin_o = math.sin(robot.orientation)
     return line_intersects_circle(
-        linepoint1=robot.position, 
-        linepoint2=robot.position + np.array([math.cos(robot.orientation), math.sin(robot.orientation)]), 
-        center=ball, 
+        linepoint1=robot.position,
+        linepoint2=np.array([robot.position[0] + cos_o, robot.position[1] + sin_o]),
+        center=ball,
         radius=margin + rsk.constants.ball_radius
     )
 
@@ -29,7 +35,7 @@ def is_inside_circle(point: array_type, center: array_type, radius: float) -> bo
     :param radius: Rayon du cercle
     :return: True si le point est dans le cercle, sinon False
     """
-    return np.linalg.norm(center - point) <= radius
+    return bool(np.linalg.norm(center - point) <= radius)
 
 
 def is_inside_court(x: Sequence[float] | array_type) -> bool:
@@ -37,7 +43,7 @@ def is_inside_court(x: Sequence[float] | array_type) -> bool:
     :param x: La position à vérifier (x, y)
     :return: Si x est à l'intérieur du terrain de jeu
     """
-    return -rsk.constants.field_length / 2 < x[0] < rsk.constants.field_length/2 and -rsk.constants.field_width / 2 < x[1] < rsk.constants.field_width/2
+    return -HALF_FIELD_LENGTH < x[0] < HALF_FIELD_LENGTH and -HALF_FIELD_WIDTH < x[1] < HALF_FIELD_WIDTH
 
 
 def is_inside_right_zone(x: Sequence[float] | array_type) -> bool:
@@ -45,7 +51,7 @@ def is_inside_right_zone(x: Sequence[float] | array_type) -> bool:
     :param x: La position à vérifier (x, y)
     :return: Si x est à l'intérieur de la zone de but droit
     """
-    return x[0] >= rsk.constants.field_length/2 - rsk.constants.defense_area_length and rsk.constants.defense_area(True)[0][1] <= x[1] <= rsk.constants.defense_area(True)[1][1]
+    return x[0] >= HALF_FIELD_LENGTH - rsk.constants.defense_area_length and -HALF_DEFENSE_AREA_WIDTH <= x[1] <= HALF_DEFENSE_AREA_WIDTH
 
 
 def is_inside_left_zone(x: Sequence[float] | array_type) -> bool:
@@ -53,15 +59,15 @@ def is_inside_left_zone(x: Sequence[float] | array_type) -> bool:
     :param x: La position à vérifier (x, y)
     :return: Si x est à l'intérieur de la zone de but gauche
     """
-    return x[0] <= -rsk.constants.field_length/2 + rsk.constants.defense_area_length and -rsk.constants.defense_area_width/2 <= x[1] <= rsk.constants.defense_area_width/2
+    return x[0] <= -HALF_FIELD_LENGTH + rsk.constants.defense_area_length and -HALF_DEFENSE_AREA_WIDTH <= x[1] <= HALF_DEFENSE_AREA_WIDTH
 
 
 def angle_of(pos: Sequence[float] | array_type) -> float:
     """
     :param pos: N'importe quoi qui ressemble à un vecteur (tableau numpy, liste, tuple...)
     :return: l'angle de pos, entre -pi et +pi
-    """
-    return math.atan2(pos[1], pos[0])
+    """    
+    return np.arctan2(pos[1], pos[0])
 
 
 def normalized(a: np.typing.ArrayLike) -> array_type:
@@ -95,16 +101,12 @@ def get_angle_between(vector1: array_type, vector2: array_type) -> float:
     :param vector2: Deuxième vecteur (x,y), doit être un tableau numpy
     :return: L'angle entre les deux vecteurs, entre 0 et +pi
     """
-    return np.arccos(np.clip(np.dot(normalized(vector1), normalized(vector2)), -1.0, 1.0))
+    norm1 = np.linalg.norm(vector1)
+    norm2 = np.linalg.norm(vector2)
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    return np.arccos(np.clip(np.dot(vector1, vector2) / (norm1 * norm2), -1.0, 1.0))
 
-def get_misalignment(pos1: array_type, pos2: array_type, base: array_type) -> float:
-    """
-    :param pos1: Premier point (x,y), doit être un tableau numpy
-    :param pos2: Deuxième point (x,y), doit être un tableau numpy
-    :param base: Point de référence pour les deux autres points (x,y), doit être un tableau numpy
-    :return: L'angle entre les deux vecteurs formés par pos1-base et pos2-base, entre 0 et +pi
-    """
-    return abs(angle_of(pos1 - base) - angle_of(pos2 - base))
 
 def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, center: array_type, radius: float) -> bool:
     """
@@ -115,8 +117,7 @@ def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, cente
     :param radius: rayon du cercle
     :return: Si le segment entre linepoint1 et linepoint2 intersecte le cercle défini par center et radius
     """
-    return np.linalg.norm(project_on_line(center, linepoint1, linepoint2) - center) <= radius
-
+    return bool(np.linalg.norm(project_on_line(center, linepoint1, linepoint2) - center) <= radius)
 
 def project_on_line(point: array_type, line_point1: array_type, line_point2: array_type, segment: bool = True) -> array_type:
     """

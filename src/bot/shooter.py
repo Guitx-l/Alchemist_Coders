@@ -26,7 +26,7 @@ def is_inside_timed_circle(shooter: rsk.client.ClientRobot, ball: array_type) ->
 
 def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: dict) -> bool:
     if is_inside_timed_circle(shooter, ball):
-        if time.time() - data['last_ball_overlap'] > 2.5:
+        if time.time() - data['last_ball_overlap'] > 2.65:
             pos = normalized(shooter.position - ball) * rsk.constants.timed_circle_radius + shooter.position
             if is_inside_court(pos):
                 target = (pos[0], pos[1], shooter.orientation)
@@ -108,7 +108,7 @@ def shooter_update(client: rsk.Client, team: str, number: int, data: dict) -> No
     if is_inside_circle(shooter.position, ball, 0.13) and faces_ball(shooter, ball):
         if time.time() - data["last_kick"] > 1:
             logger.debug("Kicking...")
-            shooter.goto(get_shoot_position(goal_pos, ball, -0.3))
+            #shooter.goto(get_shoot_position(goal_pos, ball, -0.3))
             shooter.kick(1)
             data["last_kick"] = time.time()
 

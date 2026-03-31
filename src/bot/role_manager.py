@@ -13,7 +13,7 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball)
     if not can_play(other_bot, client.referee):
         return ball[0] * goal_sign > 0
     
-    if np.linalg.norm(bot.position - other_bot.position) < 0.1:
+    if abs(bot.position[0] - other_bot.position[0]) < 0.05:
         return bot.number == 1
     
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign

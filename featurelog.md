@@ -1,21 +1,20 @@
 ## TODO:
 - coordination between the goalkeeper and the shooter // that is NOT my primary feature rn 
 - state manager?
-- ball acceleration
-- fix flickering clients bug
 - side-ball miss fix
+- incerease kick precision 
+- fix clogging in defense
+- new sweep aim system
 
 ## WORK IN PROGRESS:
+- add "speed boost" w/ ball acceleration measurment
 - lots of little thingies to adjust & sync
-- shooter rework / that weird bug (no timed circle entry)
-- court clogging fix
-- fixed shooter-ball offset
 - global simplification
 
 ## NOT FULLY RESOLVED/IMPLEMENTED/COMPLETELY TESTED:
-- better aim system (anticipation & reaction)
 - the push ball bug
-- singleton clients
+- fix flickering clients bug
+- court clogging fix
 
 ## RESOLVED/FINISHED:
 - shooter going out the court
@@ -35,6 +34,9 @@
 - goalkeeper V3 + misc
 - REAL goalkeeper
 - better documentation
+- fixed shooter-ball offset
 
 ## SCRAPED
 - new client.control() only system (w/ matrix multiplication)
+- singleton clients
+- shooter rework / that weird bug (no timed circle entry)

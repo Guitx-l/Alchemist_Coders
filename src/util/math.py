@@ -2,7 +2,8 @@ import rsk
 import math
 import numpy as np
 from typing import Sequence
-from src.util import array_type
+
+type array_type = np.ndarray[tuple[int, ...], np.dtype[np.floating]]
 
 HALF_FIELD_LENGTH = rsk.constants.field_length / 2
 HALF_FIELD_WIDTH = rsk.constants.field_width / 2

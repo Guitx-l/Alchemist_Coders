@@ -5,8 +5,8 @@ import math
 import numpy as np
 import src.util.math as math_util
 from src.util.log import getLogger
-from src.util import array_type
-from src.bot import can_play, get_robot
+from src.util.math import array_type
+from src.util.bot import can_play, get_robot
 from src.util.init import start_client
 
 MIN_BALL_SPEED = 0.05 # distance per refresh, so 0.05 means 5cm/s if refresh rate is 1Hz

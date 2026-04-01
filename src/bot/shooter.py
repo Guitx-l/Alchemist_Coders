@@ -1,14 +1,16 @@
+from http import client
+
 import rsk
 import time
 import math
 import random
 import logging
 import numpy as np
-from src.util import array_type
+from src.util.math import array_type
 from src.util.log import getLogger
 from src.util.init import start_client
 from src.util.math import angle_of, normalized, line_intersects_circle, get_shoot_position, faces_ball, is_inside_circle, is_inside_court, get_angle_between
-from src.bot import get_robot
+from src.util.bot import get_robot
 
 
 MISALIGNMENT_ANGLE = math.radians(25)
@@ -37,7 +39,7 @@ def is_inside_timed_circle(shooter: rsk.client.ClientRobot, ball: array_type) ->
     return is_inside_circle(shooter.position, ball, rsk.constants.timed_circle_radius)
 
 
-def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: dict) -> bool:
+def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: dict) -> bool:    
     if is_inside_timed_circle(shooter, ball):
         if time.time() - data['last_ball_overlap'] > BALL_ABUSE_THRESHOLD:
             evade_target = normalized(shooter.position - ball) * rsk.constants.timed_circle_radius + shooter.position
@@ -78,14 +80,14 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     shooter: rsk.client.ClientRobot = get_robot(client, team, number)
     goal_pos: array_type = data["goal_pos"]
 
+    if client.referee['game_paused']:
+        data['last_ball_overlap'] = time.time()
+
     if evade_ball_abuse(shooter, ball, data):
         return
 
     goal_pos[0] = 0.92 * goal_sign
     target = shooter.pose.copy()
-    
-    if client.referee['game_paused']:
-        data['last_ball_overlap'] = time.time()
 
     if not is_inside_court(ball):
         shooter.goto(shooter.pose, wait=False)

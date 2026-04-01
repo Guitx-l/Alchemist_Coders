@@ -3,9 +3,11 @@ import sys
 import argparse
 import time
 from typing import Callable
-from src.util import update_function_type
+from src.util.math import array_type
 from src.util.log import getLogger
-from src.bot import get_goal_sign, get_ball
+from src.util.bot import get_goal_sign, get_ball
+
+type update_function_type = Callable[[rsk.Client, str, int, int, array_type, dict], None]
 
 CLIENT: rsk.Client | None = None
 

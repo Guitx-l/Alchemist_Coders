@@ -1,6 +1,6 @@
 import rsk
 import time
-from src.util import update_function_type
+from src.util.init import update_function_type
 from src.util.log import getLogger
 
 

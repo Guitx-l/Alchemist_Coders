@@ -1,7 +1,7 @@
 import rsk
-from src.util import array_type
+from src.util.math import array_type
 from src.util.log import getLogger
-from src.bot import can_play, get_robot
+from src.util.bot import can_play, get_robot
 from src.bot.shooter import shooter_update, get_shooter_dict
 from src.bot.goalkeeper import goalkeeper_update, get_keeper_dict
 

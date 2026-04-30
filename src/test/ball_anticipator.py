@@ -18,7 +18,7 @@ FONT = pygame.font.Font(None, 18)
 width, height = 640, 480
 screen = pygame.display.set_mode((width, height))
 
-position_queue = deque(maxlen=5)
+position_queue: deque[Vector2] = deque(maxlen=5)
 ball_position = Vector2(0, 0)
 last_timestamp = time.time()
 MIDDLE = Vector2(width / 2, height / 2)

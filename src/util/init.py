@@ -2,6 +2,7 @@ import rsk
 import sys
 import argparse
 import time
+import threading
 from typing import Callable
 from src.util.math import array_type
 from src.util.log import getLogger
@@ -9,7 +10,8 @@ from src.util.bot import get_goal_sign, get_ball
 
 type update_function_type = Callable[[rsk.Client, str, int, int, array_type, dict], None]
 
-CLIENT: rsk.Client | None = None
+_client: rsk.Client | None = None
+_client_lock = threading.Lock()
 
 def get_parser(desc: str) -> argparse.ArgumentParser:
     """
@@ -32,8 +34,7 @@ def start_client(update_func: update_function_type, number: int, data_dict: dict
     :param number: numéro du robot à contrôler (1 ou 2)
     :param data_dict: dictionnaire qui sera passé à update_func comme argument
     """
-    global CLIENT
-
+    global _client
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
     logger = getLogger("client_loader")
     logger.info(f"args: {arguments}")
@@ -41,19 +42,16 @@ def start_client(update_func: update_function_type, number: int, data_dict: dict
     if 'logger' not in data_dict.keys():
         data_dict['logger'] = logger
         
-    if CLIENT is None:
-        try:
-            CLIENT = rsk.Client(host=arguments.host, key=arguments.key)
-        except rsk.client.ClientError as e:
-            logger.error(f"Failed to connect to the client: {e}")
-            return
+    with _client_lock:
+        if _client is None:
+            _client = rsk.Client(host=arguments.host, key=arguments.key)
 
-    with CLIENT:  # tkt c un bordel mais touche pas ca marche nickel
+    with _client:  # tkt c un bordel mais touche pas ca marche nickel
         while True:
             try:
-                goal_sign = get_goal_sign(CLIENT, team)
-                ball = get_ball(CLIENT)
-                update_func(CLIENT, team, number, goal_sign, ball, data_dict)
+                goal_sign = get_goal_sign(_client, team)
+                ball = get_ball(_client)
+                update_func(_client, team, number, goal_sign, ball, data_dict)
             except rsk.client.ClientError as e:
                 if arguments.verbose:
                     data_dict['logger'].warning(e)

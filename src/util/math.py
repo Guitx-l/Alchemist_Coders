@@ -1,5 +1,4 @@
 import rsk
-import math
 import numpy as np
 from typing import Sequence
 
@@ -20,8 +19,8 @@ def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 
         plus le rayon du ballon
     :return: True si le robot est orienté vers le ballon dans la limite de la marge donnée, sinon False
     """
-    cos_o = math.cos(robot.orientation)
-    sin_o = math.sin(robot.orientation)
+    cos_o = np.cos(robot.orientation)
+    sin_o = np.sin(robot.orientation)
     return line_intersects_circle(
         linepoint1=robot.position,
         linepoint2=np.array([robot.position[0] + cos_o, robot.position[1] + sin_o]),

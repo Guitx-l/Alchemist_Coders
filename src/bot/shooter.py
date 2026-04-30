@@ -1,5 +1,3 @@
-from http import client
-
 import rsk
 import time
 import math
@@ -9,9 +7,18 @@ import numpy as np
 from src.util.math import array_type
 from src.util.log import getLogger
 from src.util.init import start_client
-from src.util.math import angle_of, normalized, line_intersects_circle, get_shoot_position, faces_ball, is_inside_circle, is_inside_court, get_angle_between
-from src.util.bot import get_robot
-
+from src.util.math import (
+    angle_of, 
+    normalized, 
+    line_intersects_circle, 
+    get_shoot_position, 
+    faces_ball, 
+    is_inside_circle, 
+    is_inside_court, 
+    get_angle_between
+)
+from src.util.bot import get_robot, can_play
+# Ritchy Thibault
 
 MISALIGNMENT_ANGLE = math.radians(25)
 ALIGNED_SHOOT_OFFSET = 0
@@ -19,11 +26,25 @@ MISALIGNED_SHOOT_OFFSET = 0.2
 
 BALL_BEHIND_ANGLE = math.radians(100)
 BALL_BEHIND_VECTOR_LENGTH = 0.25
+TOP_BALL_BEHIND_VECTORS = {
+    -1: normalized([1, 1]) * BALL_BEHIND_VECTOR_LENGTH,
+    1: normalized([-1, 1]) * BALL_BEHIND_VECTOR_LENGTH
+}
+BOTTOM_BALL_BEHIND_VECTORS = {
+    -1: normalized([1, -1]) * BALL_BEHIND_VECTOR_LENGTH,
+    1: normalized([-1, -1]) * BALL_BEHIND_VECTOR_LENGTH
+}
 
 BALL_ABUSE_THRESHOLD = 2.5
 
 KICK_CIRCLE_RADIUS = 0.13
 KICK_TIME_THRESHOLD = 1.0
+
+SHOOT_POSITIONS_SWEEP_NUMBER = 10
+SHOOT_POSITIONS = {
+    -1: np.array([0.92, 0.0]),
+    1: np.array([-0.92, 0.0])
+}
 
 
 def get_shooter_dict() -> dict:
@@ -70,7 +91,7 @@ def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dic
         if i >= 10:
             modified = False
         if modified:
-            data["logger"].debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data['goal_pos'][1], 3)} -> {round(new_goal_pos[1], 3)})")
+            # data["logger"].debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data['goal_pos'][1], 3)} -> {round(new_goal_pos[1], 3)})")
             data["goal_pos"] = new_goal_pos
         return data["goal_pos"]
 
@@ -83,7 +104,7 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     if client.referee['game_paused']:
         data['last_ball_overlap'] = time.time()
 
-    if evade_ball_abuse(shooter, ball, data):
+    if evade_ball_abuse(shooter, ball, data) or not can_play(shooter, client.referee):
         return
 
     goal_pos[0] = 0.92 * goal_sign
@@ -97,10 +118,11 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     ball_vector = shooter.position - ball
     ball_vector[0] = ball_vector[0] * goal_sign
     if abs(angle_of(ball_vector)) < BALL_BEHIND_ANGLE:
+        logger.debug("Ball behind detected, evading to the side...")
         if shooter.pose[1] > ball[1]:
-            ball_behind_target = ball + normalized(np.array([-1 * goal_sign, 1])) * BALL_BEHIND_VECTOR_LENGTH
+            ball_behind_target = ball + TOP_BALL_BEHIND_VECTORS[goal_sign]
         else:
-            ball_behind_target = ball + normalized(np.array([-1 * goal_sign, -1])) * BALL_BEHIND_VECTOR_LENGTH
+            ball_behind_target = ball + BOTTOM_BALL_BEHIND_VECTORS[goal_sign]
         target = (ball_behind_target[0], ball_behind_target[1], angle_of(ball - ball_behind_target))
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle

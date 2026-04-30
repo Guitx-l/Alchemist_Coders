@@ -17,12 +17,6 @@ def get_ball(client: rsk.Client) -> array_type:
     return client.ball.copy()
 
 
-def is_inside_defense_zone(goal_sign: int, position: Sequence[float]) -> bool:
-    if goal_sign == 1:
-        return is_inside_left_zone(position)
-    return is_inside_right_zone(position)
-
-
 def get_robot(client: rsk.Client, team: str, number: int) -> rsk.client.ClientRobot:
     robot = client.robots[team][number]
     if not robot.has_position(skip_old=True):

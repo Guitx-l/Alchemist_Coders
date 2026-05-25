@@ -1,6 +1,5 @@
 import rsk
-from typing import Sequence
-from src.util.math import is_inside_left_zone, is_inside_right_zone, array_type
+from src.util.math import array_type
 
 
 def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:

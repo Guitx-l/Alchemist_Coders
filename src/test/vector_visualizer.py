@@ -12,7 +12,7 @@ fpsClock = pygame.time.Clock()
 
 width, height = 640, 480
 screen = pygame.display.set_mode((width, height))
-font = pygame.font.SysFont("Arial", 12)
+font = pygame.font.Font(None, 14)
 mouse_pos = Vector2(80, 240)
 is_open = True
 white = pygame.Color('white')
@@ -40,6 +40,19 @@ def rotate_vector(vector, angle: float):
         [np.cos(angle), -np.sin(angle)],
         [np.sin(angle), np.cos(angle)]
     ]) @ vector
+
+
+def get_angle_between(vector1, vector2) -> float:
+    """
+    :param vector1: Premier vecteur (x,y), doit être un tableau numpy
+    :param vector2: Deuxième vecteur (x,y), doit être un tableau numpy
+    :return: L'angle entre les deux vecteurs, entre 0 et +pi
+    """
+    norm1 = np.linalg.norm(vector1)
+    norm2 = np.linalg.norm(vector2)
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    return np.arccos(np.clip(np.dot(vector1, vector2) / (norm1 * norm2), -1.0, 1.0))
 
 
 def get_shoot_pos(goal_pos, ball_pos, shooter_offset_scale: float = 1) -> tuple[float, float, float]:
@@ -78,12 +91,12 @@ while is_open:
     pygame.draw.line(screen, white, middle - (0, 240), middle + (0, 240))
     pygame.draw.line(screen, blue, mouse_pos, (mouse_pos.x, 240))
     pygame.draw.line(screen, green, mouse_pos, (320, mouse_pos.y))
-    pygame.draw.aaline(screen, yellow, middle, rotate_vector(np.array(base_vector), shoot_pos[2]) + middle)
 
     screen.blit(font.render(f"shooter position: {round(shoot_pos[0]), round(shoot_pos[1])}", True, white), (0, 0))
     screen.blit(font.render(f"dot to right line: {(mouse_pos - middle).normalize().dot(Vector2(1, 0))}", True, white), (0, 12))
     screen.blit(font.render(f"angle: {-round(math.degrees(shoot_pos[2]))}", True, white), (0, 24))
     screen.blit(font.render(f"line in circle: {in_circle(middle, mouse_pos, circle_center, 30)}", True, white), (0, 36))
+    screen.blit(font.render(f"angle to right line: {round(math.degrees(get_angle_between(mouse_pos - middle, Vector2(1, 0))))}", True, white), (0, 48))
     pygame.display.flip()
     fpsClock.tick(fps)
 

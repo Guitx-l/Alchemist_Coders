@@ -1,106 +1,109 @@
-import sys
 import rsk
-import time
-import math
+import logging
 import pygame
 import numpy as np
 from collections import deque
 from pygame import Vector2
- 
-pygame.init()
- 
-FPS = 60
-fpsClock = pygame.time.Clock()
-BALL_UPDATE_RATE = 1 # Hz
- 
-FONT = pygame.font.Font(None, 18)
 
+pygame.init()
+
+# --- CONFIGURATION ---
+FPS = 30 # We poll and predict at 30Hz
+fpsClock = pygame.time.Clock()
+
+# Physics Window: 0.2s baseline / (1/30s) = 6 frames lookback
+LOOKBACK = 6 
+# Total queue size needs to be double the lookback to calculate acceleration
+position_queue = deque(maxlen=LOOKBACK * 2 + 1)
+
+FONT = pygame.font.Font(None, 24)
 width, height = 640, 480
 screen = pygame.display.set_mode((width, height))
 
-position_queue: deque[Vector2] = deque(maxlen=5)
-ball_position = Vector2(0, 0)
-last_timestamp = time.time()
+# Field Setup (RSK standard)
 MIDDLE = Vector2(width / 2, height / 2)
-
-COURT_SIZE = Vector2()
-COURT_SIZE.x = 0.9 * width
-COURT_SIZE.y = rsk.constants.field_width / rsk.constants.field_length * COURT_SIZE.x
+COURT_SIZE = Vector2(width * 0.8, (rsk.constants.field_width / rsk.constants.field_length) * (width * 0.8))
 SCALING_MATRIX = np.array([
     [COURT_SIZE.x / rsk.constants.field_length, 0], 
     [0, -COURT_SIZE.y / rsk.constants.field_width]
-    ])
-
+])
 COURT_TOPLEFT = MIDDLE - COURT_SIZE / 2
 
-red = pygame.Color(255, 0, 0)
-green = pygame.Color(0, 255, 0)
-blue = pygame.Color(0, 0, 255)
-white = pygame.Color(255, 255, 255)
+# Colors
+RED, GREEN, BLUE, WHITE = (255, 0, 0), (0, 255, 0), (0, 100, 255), (255, 255, 255)
 
+def abs_coords(coords: Vector2) -> Vector2:
+    return Vector2(tuple(np.array([coords.x, coords.y]) @ SCALING_MATRIX + COURT_TOPLEFT + 0.5 * COURT_SIZE))
 
-def abs_coords(coords: np.ndarray | Vector2) -> Vector2:
-    return coords @ SCALING_MATRIX + COURT_TOPLEFT + 0.5 * COURT_SIZE
+def get_sliding_physics(queue: deque[Vector2]) -> tuple[Vector2, Vector2]:
+    """Calculates v and a using a fixed 0.2s (6 frame) lookback."""
+    if len(queue) < LOOKBACK + 1:
+        return Vector2(), Vector2()
 
-def get_angle_between(v1: Vector2, v2: Vector2) -> float:
-    return np.arccos(np.clip(v1.dot(v2) / (v1.length() * v2.length() + 0.0001), -1.0, 1.0))
-
-
-def anticipate_ball_position(position_queue: deque) -> Vector2:
-    if len(position_queue) == position_queue.maxlen:
-        pass
+    # 1. Current Velocity (Compare now to 6 frames ago)
+    # dt is exactly 0.2 seconds (6 * 1/30)
+    dt = LOOKBACK / FPS
+    current_velocity = (queue[-1] - queue[-1 - LOOKBACK]) / dt
     
-    if len(position_queue) >= 2:
-        # Fit a quadratic curve to the last few positions and extrapolate.
-        times = np.arange(0, -5, -1) # Time steps for the last 3 positions.
-        x_positions = np.array([pos.x for pos in position_queue])
-        y_positions = np.array([pos.y for pos in position_queue])
+    # 2. Acceleration (Compare current velocity window to the previous window)
+    acceleration = Vector2(0, 0)
+    if len(queue) >= (LOOKBACK * 2 + 1):
+        previous_velocity = (queue[-1 - LOOKBACK] - queue[-1 - 2*LOOKBACK]) / dt
+        acceleration = (current_velocity - previous_velocity) / dt
         
-        # Fit quadratic polynomials to x and y positions.
-
-        coeffs_x = np.polyfit(times[:len(position_queue)], x_positions, 2)
-        coeffs_y = np.polyfit(times[:len(position_queue)], y_positions, 2)
-        
-        # Extrapolate to the next time step (t=1).
-        next_x = np.polyval(coeffs_x, 1)
-        next_y = np.polyval(coeffs_y, 1)
-        
-        return Vector2(next_x, next_y)
-    return position_queue[-1] if position_queue else Vector2(0, 0)
+        # Kick Detection: If direction change > 60 deg, ignore this acceleration spike
+        if current_velocity.length() > 0.05 and previous_velocity.length() > 0.05:
+            if abs(current_velocity.angle_to(previous_velocity)) > 60:
+                logging.info("kicking idk")
+                acceleration = Vector2(0, 0)
+                
+    return current_velocity, acceleration
 
 with rsk.Client() as client:     
     while True:
-        screen.fill((0, 0, 0))
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.display.quit()
                 pygame.quit()
-                sys.exit()
-        
-        # Update.
-        if time.time() - last_timestamp > 1 / BALL_UPDATE_RATE and client.ball is not None:
-            new_vector = Vector2(client.ball[0], client.ball[1])
-            if len(position_queue) > 0 and get_angle_between(new_vector, position_queue[-1]) < math.radians(160):
-                import icecream
-                icecream.ic(math.degrees(get_angle_between(new_vector, position_queue[-1])))
-                icecream.ic((new_vector - position_queue[-1]).length())
-                position_queue.clear()
+                break
 
-            position_queue.append(Vector2(client.ball[0], client.ball[1]))
-            ball_position.x = client.ball[0]
-            ball_position.y = client.ball[1]
-            last_timestamp = time.time()
-        # Draw.
-        screen.fill((0, 0, 0))
-        screen.blit(FONT.render(f"{math.degrees(get_angle_between(ball_position, Vector2(1, 0)))}", True, white), (10, 10))
-        pygame.draw.rect(screen, white, (*COURT_TOPLEFT, *COURT_SIZE), width=2)
-        try:
-            pygame.draw.lines(screen, green, False, [abs_coords(pos) for pos in position_queue], width=2)
-        except ValueError:
-            pass
-        pygame.draw.line(screen, red, abs_coords(anticipate_ball_position(position_queue)), abs_coords(ball_position))
-        pygame.draw.circle(screen, white, abs_coords(ball_position), 10)
+        # --- 1. POLL & UPDATE (30Hz) ---
+        # We push to the queue every single loop iteration
+        if client.ball is not None:
+            ball_vector = Vector2(client.ball[0], client.ball[1])
+            position_queue.append(ball_vector)
+
+        # --- 2. PHYSICS & PREDICTION ---
+        velocity, acceleration = get_sliding_physics(position_queue)
         
-        
+        # Estimate position for the NEXT frame (1/30s ahead)
+        dt_frame = 1/FPS
+        if len(position_queue) > 0:
+            # Standard kinematic: x_f = x + vt + 0.5at^2
+            future_pos = position_queue[-1] + (velocity * dt_frame) + (0.5 * acceleration * (dt_frame**2))
+        else:
+            future_pos = Vector2(0,0)
+
+        # --- 3. DRAWING ---
+        screen.fill((20, 20, 20))
+        pygame.draw.rect(screen, WHITE, (*COURT_TOPLEFT, *COURT_SIZE), width=2)
+
+        if len(position_queue) >= 2:
+            # Draw History
+            history_pixels = [abs_coords(p) for p in position_queue]
+            pygame.draw.lines(screen, GREEN, False, history_pixels, width=1)
+
+            # Draw Current Ball (White)
+            pygame.draw.circle(screen, WHITE, abs_coords(position_queue[-1]), 8)
+
+            # Draw Prediction (Blue)
+            pred_pixels = abs_coords(future_pos)
+            pygame.draw.circle(screen, BLUE, (int(pred_pixels.x), int(pred_pixels.y)), 10, width=2)
+            pygame.draw.line(screen, BLUE, abs_coords(position_queue[-1]), pred_pixels, 1)
+
+            # UI Text
+            speed_text = FONT.render(f"Speed: {velocity.length():.2f} m/s", True, WHITE)
+            screen.blit(speed_text, (20, 20))
+
         pygame.display.flip()
         fpsClock.tick(FPS)

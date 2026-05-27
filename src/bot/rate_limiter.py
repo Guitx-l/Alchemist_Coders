@@ -4,7 +4,7 @@ from src.util.init import update_function_type
 from src.util.log import getLogger
 
 
-def get_rate_limiter_dict(sub_client_dict: dict = {}, sub_client_update_func: update_function_type = lambda *x: None, refresh_rate: float = 60) -> dict:
+def get_rate_limiter_dict(sub_client_update_func: update_function_type = lambda *x: None, sub_client_dict: dict = {}, refresh_rate: float = 60) -> dict:
     return {
         "logger": getLogger("rate_limiter"),
         "client_data": sub_client_dict,
@@ -30,5 +30,5 @@ def rate_limiter_update(client: rsk.Client, team: str, number: int, goal_sign: i
 
 if __name__ == "__main__":
     from src.util.init import start_client
-    refersh_rate = 1
-    start_client(rate_limiter_update, number=1, data_dict=get_rate_limiter_dict(refresh_rate=refersh_rate))
+    refresh_rate = 1
+    start_client(rate_limiter_update, number=1, data_dict=get_rate_limiter_dict(refresh_rate=refresh_rate))

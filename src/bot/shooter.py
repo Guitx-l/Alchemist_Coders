@@ -17,7 +17,7 @@ from src.util.math import (
     is_inside_court, 
     get_angle_between
 )
-from src.bot.ball_anticipation import get_future_ball_position, get_ball_velocity
+from src.bot.ball_anticipation import get_dynamic_future_ball, get_ball_velocity
 from src.util.bot import get_robot, can_play
 # Ritchy Thibault
 
@@ -101,10 +101,7 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     logger: logging.Logger = data["logger"]
     shooter: rsk.client.ClientRobot = get_robot(client, team, number)
     goal_pos: array_type = data["goal_pos"]
-    ball_velocity = get_ball_velocity(client)
-    future_ball = get_future_ball_position(client, 0.25)
-    if future_ball is None:
-        future_ball = ball
+    future_ball = get_dynamic_future_ball(client) or ball
 
     if client.referee['game_paused']:
         data['last_ball_overlap'] = time.time()
@@ -134,12 +131,12 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
         get_angle_between(shooter.position - goal_pos, ball - goal_pos) > MISALIGNMENT_ANGLE
         or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, margin=0.01))
     ):
-        goal_pos = get_goal_position(client, ball, team, data)
-        target = get_shoot_position(goal_pos, ball, MISALIGNED_SHOOT_OFFSET)
+        goal_pos = get_goal_position(client, future_ball, team, data)
+        target = get_shoot_position(goal_pos, future_ball, MISALIGNED_SHOOT_OFFSET)
     else:
-        goal_pos = get_goal_position(client, ball, team, data)
-        target = get_shoot_position(goal_pos, ball, ALIGNED_SHOOT_OFFSET)
-        
+        goal_pos = get_goal_position(client, future_ball, team, data)
+        target = get_shoot_position(goal_pos, future_ball, ALIGNED_SHOOT_OFFSET)
+
         if is_inside_circle(shooter.position, ball, KICK_CIRCLE_RADIUS) and faces_ball(shooter, ball, margin=0):
             logger.debug("Kicking...")
             shooter.kick(1)

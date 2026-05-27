@@ -6,7 +6,6 @@ import threading
 from typing import Callable
 from src.util.math import array_type
 from src.util.log import getLogger
-from src.util.bot import get_goal_sign, get_ball
 
 type update_function_type = Callable[[rsk.Client, str, int, int, array_type, dict], None]
 
@@ -49,9 +48,10 @@ def start_client(update_func: update_function_type, number: int, data_dict: dict
     with _client:  # tkt c un bordel mais touche pas ca marche nickel
         while True:
             try:
-                goal_sign = get_goal_sign(_client, team)
-                ball = get_ball(_client)
-                update_func(_client, team, number, goal_sign, ball, data_dict)
+                goal_sign = -1 if _client.referee['teams'][team]['x_positive'] else 1
+                if _client.ball is None:
+                    raise rsk.client.ClientError("#ball is none")
+                update_func(_client, team, number, goal_sign, _client.ball, data_dict)
             except rsk.client.ClientError as e:
                 if arguments.verbose:
                     data_dict['logger'].warning(e)

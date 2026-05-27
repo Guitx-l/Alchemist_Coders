@@ -11,6 +11,10 @@ pygame.init()
 FPS = 30 # We poll and predict at 30Hz
 fpsClock = pygame.time.Clock()
 
+SYSTEM_LATENCY = 0.1   # The base lag (e.g., 100ms)
+SPEED_SENSITIVITY = 0.1 # How much extra lead per m/s
+MAX_LEAD = 0.8         # Cap the prediction so it doesn't look off-field
+
 # Physics Window: 0.2s baseline / (1/30s) = 6 frames lookback
 LOOKBACK = 6 
 # Total queue size needs to be double the lookback to calculate acceleration
@@ -59,6 +63,17 @@ def get_sliding_physics(queue: deque[Vector2]) -> tuple[Vector2, Vector2]:
                 
     return current_velocity, acceleration
 
+def get_dynamic_dt(velocity: Vector2, acceleration: Vector2) -> float:
+    speed = velocity.length()
+    accel = acceleration.length()
+    
+    # Simple linear scaling: 
+    # More speed = More look-ahead
+    dynamic_dt = SYSTEM_LATENCY + (speed * SPEED_SENSITIVITY)
+    
+    # Clamp the value so it stays realistic
+    return min(dynamic_dt, MAX_LEAD)
+
 with rsk.Client() as client:     
     while True:
         for event in pygame.event.get():
@@ -77,7 +92,7 @@ with rsk.Client() as client:
         velocity, acceleration = get_sliding_physics(position_queue)
         
         # Estimate position for the NEXT frame (1/30s ahead)
-        dt_frame = 0.25
+        dt_frame = get_dynamic_dt(velocity, acceleration)
         if len(position_queue) > 0:
             # Standard kinematic: x_f = x + vt + 0.5at^2
             future_pos = position_queue[-1] + (velocity * dt_frame) + (0.5 * acceleration * (dt_frame**2))

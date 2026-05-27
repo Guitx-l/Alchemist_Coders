@@ -10,6 +10,10 @@ LOOKBACK_TIME = 0.2 # en s
 LOOKBACK_FRAMES = int(LOOKBACK_TIME / QUEUE_UPDATE_PERIOD) # 6 updates a 30Hz
 KICK_DETECTION_ANGLE_THRESHOLD = np.radians(60) # en radians
 
+SYSTEM_LATENCY = 0.1   # lag de base du système en ms
+SPEED_SENSITIVITY = 0.1 # combien de prediction en plus pour chaque m/s de la balle
+MAX_LEAD = 0.8         # Δt max de prediction pour éviter les extrapolations trop folles
+
 QUEUE_LOCK = Lock() # éviter les races conditions
 _ball_queue: deque[np.ndarray] = deque(maxlen=2 * LOOKBACK_FRAMES + 1) # +1 pour avoir au moins une position même si on n'a pas encore 0.2s de données
 
@@ -27,7 +31,7 @@ def get_ball_queue(client: rsk.Client) -> deque[np.ndarray]:
     return _ball_queue
 
 
-def get_future_ball_position(client: rsk.Client, prediction_time: float = QUEUE_UPDATE_PERIOD) -> np.ndarray | None:
+def get_fixed_future_ball(client: rsk.Client, prediction_time: float = QUEUE_UPDATE_PERIOD) -> np.ndarray | None:
     position_queue = get_ball_queue(client)
     with QUEUE_LOCK:
         if len(position_queue) < LOOKBACK_FRAMES + 1:
@@ -49,7 +53,7 @@ def get_future_ball_position(client: rsk.Client, prediction_time: float = QUEUE_
 
         return position_queue[-1] + (current_velocity * prediction_time) + (0.5 * acceleration * (prediction_time**2))
     
-    
+
 def get_ball_velocity(client: rsk.Client) -> np.ndarray | None:
     position_queue = get_ball_queue(client)
     with QUEUE_LOCK:
@@ -57,3 +61,11 @@ def get_ball_velocity(client: rsk.Client) -> np.ndarray | None:
             return None # pas assez de données pour faire une prédiction
 
         return (position_queue[-1] - position_queue[-1 - LOOKBACK_FRAMES]) / LOOKBACK_TIME
+    
+def get_dynamic_future_ball(client: rsk.Client) -> np.ndarray | None:
+    velocity = get_ball_velocity(client)
+    if velocity is None:
+        return None
+    lead_time = SYSTEM_LATENCY + float(SPEED_SENSITIVITY * np.linalg.norm(velocity))
+    lead_time = min(lead_time, MAX_LEAD)
+    return get_fixed_future_ball(client, prediction_time=lead_time)

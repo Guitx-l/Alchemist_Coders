@@ -6,14 +6,7 @@ def can_play(bot: rsk.client.ClientRobot, referee: dict) -> bool:
     return (not referee['teams'][bot.team]['robots'][str(bot.number)]['preempted']) and (not referee['teams'][bot.team]['robots'][str(bot.number)]['penalized'])
 
 
-def get_goal_sign(client: rsk.Client, team: str) -> int:
-    return -1 if client.referee['teams'][team]['x_positive'] else 1
 
-
-def get_ball(client: rsk.Client) -> array_type:
-    if client.ball is None:
-        raise rsk.client.ClientError("#ball is none")
-    return client.ball.copy()
 
 
 def get_robot(client: rsk.Client, team: str, number: int) -> rsk.client.ClientRobot:

@@ -30,7 +30,7 @@ def get_ball_queue(client: rsk.Client) -> deque[np.ndarray]:
 def get_future_ball_position(client: rsk.Client, prediction_time: float = QUEUE_UPDATE_PERIOD) -> np.ndarray | None:
     position_queue = get_ball_queue(client)
     with QUEUE_LOCK:
-        if len(position_queue) < 2:
+        if len(position_queue) < LOOKBACK_FRAMES + 1:
             return None # pas assez de données pour faire une prédiction
 
         # 1. Current Velocity (Compare now to 6 updates ago)
@@ -48,3 +48,12 @@ def get_future_ball_position(client: rsk.Client, prediction_time: float = QUEUE_
                     acceleration = np.array([0.0, 0.0])      
 
         return position_queue[-1] + (current_velocity * prediction_time) + (0.5 * acceleration * (prediction_time**2))
+    
+    
+def get_ball_velocity(client: rsk.Client) -> np.ndarray | None:
+    position_queue = get_ball_queue(client)
+    with QUEUE_LOCK:
+        if len(position_queue) < LOOKBACK_FRAMES + 1:
+            return None # pas assez de données pour faire une prédiction
+
+        return (position_queue[-1] - position_queue[-1 - LOOKBACK_FRAMES]) / LOOKBACK_TIME

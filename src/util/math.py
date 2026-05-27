@@ -25,7 +25,8 @@ def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 
         linepoint1=robot.position,
         linepoint2=np.array([robot.position[0] + cos_o, robot.position[1] + sin_o]),
         center=ball,
-        radius=margin + rsk.constants.ball_radius
+        radius=margin + rsk.constants.ball_radius,
+        segment=False
     )
 
 def is_inside_circle(point: array_type, center: array_type, radius: float) -> bool:
@@ -108,7 +109,7 @@ def get_angle_between(vector1: array_type, vector2: array_type) -> float:
     return np.arccos(np.clip(np.dot(vector1, vector2) / (norm1 * norm2), -1.0, 1.0))
 
 
-def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, center: array_type, radius: float) -> bool:
+def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, center: array_type, radius: float, segment: bool = True) -> bool:
     """
     :description: Vérifie si le segment de ligne défini par linepoint1 et linepoint2 intersecte le cercle défini par center et radius
     :param linepoint1: premier point de la ligne, doit être un tableau numpy
@@ -117,7 +118,7 @@ def line_intersects_circle(linepoint1: array_type, linepoint2: array_type, cente
     :param radius: rayon du cercle
     :return: Si le segment entre linepoint1 et linepoint2 intersecte le cercle défini par center et radius
     """
-    return bool(np.linalg.norm(project_on_line(center, linepoint1, linepoint2) - center) <= radius)
+    return bool(np.linalg.norm(project_on_line(center, linepoint1, linepoint2, segment=segment) - center) <= radius)
 
 def project_on_line(point: array_type, line_point1: array_type, line_point2: array_type, segment: bool = True) -> array_type:
     """

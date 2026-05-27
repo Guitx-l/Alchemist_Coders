@@ -17,15 +17,16 @@ from src.util.math import (
     is_inside_court, 
     get_angle_between
 )
+from src.bot.ball_anticipation import get_future_ball_position, get_ball_velocity
 from src.util.bot import get_robot, can_play
 # Ritchy Thibault
 
 MISALIGNMENT_ANGLE = math.radians(25)
-ALIGNED_SHOOT_OFFSET = 0
+ALIGNED_SHOOT_OFFSET = -0.2
 MISALIGNED_SHOOT_OFFSET = 0.2
 
 BALL_BEHIND_ANGLE = math.radians(100)
-BALL_BEHIND_VECTOR_LENGTH = 0.25
+BALL_BEHIND_VECTOR_LENGTH = 0.23
 TOP_BALL_BEHIND_VECTORS = {
     -1: normalized([1, 1]) * BALL_BEHIND_VECTOR_LENGTH,
     1: normalized([-1, 1]) * BALL_BEHIND_VECTOR_LENGTH
@@ -37,7 +38,7 @@ BOTTOM_BALL_BEHIND_VECTORS = {
 
 BALL_ABUSE_THRESHOLD = 2.5
 
-KICK_CIRCLE_RADIUS = 0.13
+KICK_CIRCLE_RADIUS = 0.135
 KICK_TIME_THRESHOLD = 1.0
 
 SHOOT_POSITIONS_SWEEP_NUMBER = 10
@@ -100,6 +101,10 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     logger: logging.Logger = data["logger"]
     shooter: rsk.client.ClientRobot = get_robot(client, team, number)
     goal_pos: array_type = data["goal_pos"]
+    ball_velocity = get_ball_velocity(client)
+    future_ball = get_future_ball_position(client, 0.25)
+    if future_ball is None:
+        future_ball = ball
 
     if client.referee['game_paused']:
         data['last_ball_overlap'] = time.time()
@@ -118,35 +123,30 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     ball_vector = shooter.position - ball
     ball_vector[0] = ball_vector[0] * goal_sign
     if abs(angle_of(ball_vector)) < BALL_BEHIND_ANGLE:
-        logger.debug("Ball behind detected, evading to the side...")
         if shooter.pose[1] > ball[1]:
-            ball_behind_target = ball + TOP_BALL_BEHIND_VECTORS[goal_sign]
+            ball_behind_target = future_ball + TOP_BALL_BEHIND_VECTORS[goal_sign]
         else:
-            ball_behind_target = ball + BOTTOM_BALL_BEHIND_VECTORS[goal_sign]
-        target = (ball_behind_target[0], ball_behind_target[1], angle_of(ball - ball_behind_target))
+            ball_behind_target = future_ball + BOTTOM_BALL_BEHIND_VECTORS[goal_sign]
+        target = (ball_behind_target[0], ball_behind_target[1], angle_of(future_ball - ball_behind_target))
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
     elif (
         get_angle_between(shooter.position - goal_pos, ball - goal_pos) > MISALIGNMENT_ANGLE
-        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball))
+        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, margin=0.01))
     ):
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, MISALIGNED_SHOOT_OFFSET)
     else:
         goal_pos = get_goal_position(client, ball, team, data)
         target = get_shoot_position(goal_pos, ball, ALIGNED_SHOOT_OFFSET)
+        
+        if is_inside_circle(shooter.position, ball, KICK_CIRCLE_RADIUS) and faces_ball(shooter, ball, margin=0):
+            logger.debug("Kicking...")
+            shooter.kick(1)
+            data["last_kick"] = time.time()
 
     
-    if (
-        is_inside_circle(shooter.position, ball, KICK_CIRCLE_RADIUS) 
-        and faces_ball(shooter, ball) 
-        and time.time() - data["last_kick"] > KICK_TIME_THRESHOLD
-    ):
-        logger.debug("Kicking...")
-        shooter.kick(1)
-        data["last_kick"] = time.time()
-    else:
-        shooter.goto(target, wait=False)
+    shooter.goto(target, wait=False)
 
 
 if __name__ == "__main__":

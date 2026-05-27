@@ -77,7 +77,7 @@ with rsk.Client() as client:
         velocity, acceleration = get_sliding_physics(position_queue)
         
         # Estimate position for the NEXT frame (1/30s ahead)
-        dt_frame = 1/FPS
+        dt_frame = 0.25
         if len(position_queue) > 0:
             # Standard kinematic: x_f = x + vt + 0.5at^2
             future_pos = position_queue[-1] + (velocity * dt_frame) + (0.5 * acceleration * (dt_frame**2))

@@ -10,10 +10,9 @@ from src.util.log import getLogger
 from src.util.math import array_type
 from src.util.bot import can_play, get_robot
 from src.util.init import start_client
+from src.bot.ball_anticipation import get_future_ball_position, get_ball_velocity
 
 MIN_BALL_SPEED = 0.5 # in m/s
-BALL_REFRESH_PERIOD = 1 / 5 # in s
-MIN_BALL_DISTANCE = MIN_BALL_SPEED * BALL_REFRESH_PERIOD
 
 KICK_CIRCLE_RADIUS = 0.13
 
@@ -28,7 +27,7 @@ BOTTOM_BALL_BEHIND_VECTORS = {
     1: math_util.normalized([-1, -1]) * BALL_BEHIND_VECTOR_LENGTH
 }
 BALL_RUSH_X_THRESHOLD = 0
-TEAMMATE_BALL_PROXIMITY_THRESHOLD = 0.3
+TEAMMATE_BALL_PROXIMITY_THRESHOLD = 0.25
 OPPONENT_BALL_PROXIMITY_THRESHOLD = 0.15
 
 class Strategy(enum.Enum):
@@ -70,8 +69,7 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, goal_sign: int
     target_x = -0.92 * goal_sign
     target_y = keeper.position[1]
     logger: logging.Logger = data['logger']
-    ball_vector = ball - last_ball_position
-    ball_vector_length = np.linalg.norm(ball_vector) + 1e-6 # to avoid division by zero
+    ball_velocity = get_ball_velocity(client)
 
     if not math_util.is_inside_court(ball) or not can_play(keeper, client.referee):
         keeper.goto(keeper.pose)
@@ -80,17 +78,19 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, goal_sign: int
     opp_shooter = get_opposing_shooter(client, team, ball)
     team_mate = get_robot(client, team, 3 - number) # 3 - 1 = 2 and 3 - 2 = 1
     goal_post_x = -0.92 * goal_sign
+    
     no_opp_shooter = np.linalg.norm(ball - opp_shooter.position) > OPPONENT_BALL_PROXIMITY_THRESHOLD
+    no_team_mate = np.linalg.norm(ball - team_mate.position) > TEAMMATE_BALL_PROXIMITY_THRESHOLD
 
-    if no_opp_shooter and ball_vector_length > MIN_BALL_DISTANCE:
-        target_y = ball[1] + (ball_vector[1] * (goal_post_x - last_ball_position[0]) / ball_vector[0])
+    if ball_velocity is not None and np.linalg.norm(ball_velocity) > MIN_BALL_SPEED:
+        target_y = ball[1] + (ball_velocity[1] * (goal_post_x - last_ball_position[0]) / ball_velocity[0])
         strategy = Strategy.BALL_VECTOR
         
     elif (
         no_opp_shooter 
         and (ball[0] * goal_sign < BALL_RUSH_X_THRESHOLD) 
         # si le coéquipier est proche du ballon et peut jouer, on ne rush pas le ballon pour éviter les interférences, sinon on y va
-        and not (np.linalg.norm(team_mate.position - ball) < TEAMMATE_BALL_PROXIMITY_THRESHOLD and can_play(team_mate, client.referee))
+        and (no_team_mate or not can_play(team_mate, client.referee))
     ):
         target_x, target_y = ball
         strategy = Strategy.BALL_RUSH
@@ -104,7 +104,7 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, goal_sign: int
         strategy = Strategy.THALES_SHOOTER
 
 
-    if not is_inside_defense_zone(goal_sign, ball) and strategy not in (Strategy.NONE, Strategy.BALL_RUSH):
+    if not is_inside_defense_zone(goal_sign, ball) and no_team_mate and strategy != Strategy.BALL_RUSH:
         target_x, target_y = math_util.project_on_line(keeper.position, np.array([target_x, target_y]), ball)
     elif strategy != Strategy.BALL_RUSH:
         target_y = np.clip(target_y, -0.25, 0.25)
@@ -122,11 +122,6 @@ def goalkeeper_update(client: rsk.Client, team: str, number: int, goal_sign: int
 
     if math_util.is_inside_circle(ball, keeper.position, KICK_CIRCLE_RADIUS):
         keeper.kick(1)
-
-    now = time.time()
-    if now - data['last_timestamp'] > BALL_REFRESH_PERIOD:
-        data["last_ball_position"] = ball.copy()
-        data["last_timestamp"] = now
 
 
 if __name__ == "__main__":

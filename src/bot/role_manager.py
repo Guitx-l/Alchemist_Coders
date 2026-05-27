@@ -7,6 +7,7 @@ from src.bot.goalkeeper import goalkeeper_update, get_keeper_dict
 
 FLICKER_DISTANCE_THRESHOLD = 0.05
 ATTACK_MODE_THRESHOLD = 0
+STALL_MODE_THRESHOLD = -0.2
 
 def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball) -> bool:
     bot = get_robot(client, team, number)
@@ -18,6 +19,8 @@ def is_shooter(client: rsk.Client, team: str, number: int, goal_sign: int, ball)
     if abs(bot.position[0] - other_bot.position[0]) < FLICKER_DISTANCE_THRESHOLD:
         return bot.number == 1
     
+    if ball[0] * goal_sign < STALL_MODE_THRESHOLD:
+        return False
     return bot.position[0] * goal_sign > other_bot.position[0] * goal_sign
 
 

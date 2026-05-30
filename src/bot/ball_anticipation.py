@@ -10,12 +10,13 @@ LOOKBACK_TIME = 0.2 # en s
 LOOKBACK_FRAMES = int(LOOKBACK_TIME / QUEUE_UPDATE_PERIOD) # 6 updates a 30Hz
 KICK_DETECTION_ANGLE_THRESHOLD = np.radians(60) # en radians
 
-SYSTEM_LATENCY = 0.1   # lag de base du système en ms
-SPEED_SENSITIVITY = 0.1 # combien de prediction en plus pour chaque m/s de la balle
-MAX_LEAD = 0.8         # Δt max de prediction pour éviter les extrapolations trop folles
+SYSTEM_LATENCY = 0.1  # lag de base du système en ms
+SPEED_SENSITIVITY = 0.22 # combien de prediction en plus pour chaque m/s de la balle
+ACCELERATION_SENSITIVITY = 0.05 # combien de prediction en plus pour chaque m/s² d'accélération de la balle
+MAX_LEAD = 1         # Δt max de prediction pour éviter les extrapolations trop folles
 
 QUEUE_LOCK = Lock() # éviter les races conditions
-_ball_queue: deque[np.ndarray] = deque(maxlen=2 * LOOKBACK_FRAMES + 1) # +1 pour avoir au moins une position même si on n'a pas encore 0.2s de données
+_ball_queue: deque[np.ndarray] = deque(maxlen=2 * LOOKBACK_FRAMES + 1)
 
 _last_update = 0.0
 
@@ -23,7 +24,7 @@ _last_update = 0.0
 def get_ball_queue(client: rsk.Client) -> deque[np.ndarray]:
     global _last_update
     current_time = time.time()
-    if current_time - _last_update >= QUEUE_UPDATE_PERIOD:
+    if current_time - _last_update > QUEUE_UPDATE_PERIOD:
         _last_update = current_time
         if client.ball is not None:
             with QUEUE_LOCK:
@@ -62,10 +63,24 @@ def get_ball_velocity(client: rsk.Client) -> np.ndarray | None:
 
         return (position_queue[-1] - position_queue[-1 - LOOKBACK_FRAMES]) / LOOKBACK_TIME
     
+    
+def get_ball_acceleration(client: rsk.Client) -> np.ndarray | None:
+    position_queue = get_ball_queue(client)
+    with QUEUE_LOCK:
+        if len(position_queue) < (LOOKBACK_FRAMES * 2 + 1):
+            return None # pas assez de données pour faire une prédiction
+
+        current_velocity = (position_queue[-1] - position_queue[-1 - LOOKBACK_FRAMES]) / LOOKBACK_TIME
+        previous_velocity = (position_queue[-1 - LOOKBACK_FRAMES] - position_queue[-1 - 2 * LOOKBACK_FRAMES]) / LOOKBACK_TIME
+        return (current_velocity - previous_velocity) / LOOKBACK_TIME
+    
+
 def get_dynamic_future_ball(client: rsk.Client) -> np.ndarray | None:
     velocity = get_ball_velocity(client)
-    if velocity is None:
+    acceleration = get_ball_acceleration(client)
+    if velocity is None or acceleration is None:
         return None
     lead_time = SYSTEM_LATENCY + float(SPEED_SENSITIVITY * np.linalg.norm(velocity))
+    lead_time += float(ACCELERATION_SENSITIVITY * np.linalg.norm(acceleration))
     lead_time = min(lead_time, MAX_LEAD)
     return get_fixed_future_ball(client, prediction_time=lead_time)

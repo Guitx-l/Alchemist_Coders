@@ -5,7 +5,7 @@ import time
 import threading
 from typing import Callable
 from src.util.math import array_type
-from src.util.log import getLogger
+from src.util.log import get_logger
 
 type update_function_type = Callable[[rsk.Client, str, int, int, array_type, dict], None]
 
@@ -35,7 +35,7 @@ def start_client(update_func: update_function_type, number: int, data_dict: dict
     """
     global _client
     arguments = get_parser("Script that runs a client (adapted to halftime change)").parse_args(sys.argv[1::])
-    logger = getLogger("client_loader")
+    logger = get_logger("client_loader")
     logger.info(f"args: {arguments}")
     team = arguments.team
     if 'logger' not in data_dict.keys():

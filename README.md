@@ -11,7 +11,7 @@
 Nous sommes, avec Botbusters, les équipes représentant le lycée [Alfred Kastler](https://lyceekastler.fr)
 dans la [RoboCup Junior](https://www.robocup.fr/qu-est-ce-que-c-est) en ligue [SCT](https://www.robocup.fr/about-3).
 Notre équipe est composée de [Guitx](https://github.com/Guitx-l) et de [Mamba](https://github.com/Jonathan-Mamba).
-Ce dépôt contient un programme complet contenant des comportemements et des stratégies qui guideront les robots en fonction de situation précise sur le terrain pour avoir l'avantage sur l'équippe adverse.
+Ce dépôt contient un programme complet contenant des comportements et des stratégies qui guideront les robots en fonction de situations précises sur le terrain pour avoir l'avantage sur l'équipe adverse.
 
 # Nos résultats
 
@@ -48,7 +48,7 @@ Ce dépôt contient un programme complet contenant des comportemements et des st
 - [`src/`](src/) — code source principal
   - [`bot`](src/bot/) — shooter, gardien, multi-client et autres auxiliaires  
   - [`util/`](src/util/) — math, logging, démarrage du client  
-  - [`test/`](src/test/) — srcipt servant au débogage de différentes fonctionnalités, peut avoir des dépendances différentes
+  - [`test/`](src/test/) — scripts de test et débogage de différentes fonctionnalités, peut avoir des dépendances différentes
   - [`__main__.py`](src/__main__.py) — point d'entrée du programme, exemple qui lance les deux robots
 
 ## Exécution du projet
@@ -63,28 +63,28 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
 ## Fonctionnement général - résumé
 
 - Le code est organisé autour de fonctions d'update appelées en boucle par `start_client()`
-- L'état est stocké dans des simples dictionnaires retournés par des fonctions:
+- L'état est stocké dans de simples dictionnaires retournés par des fonctions:
   - `get_shooter_dict()`
   - `get_keeper_dict()`
   - `get_role_manager_dict()`
   - `...`
-- Les fonctions d'update utilisent des paramètres explicites: (client, team, number, data_dict)
-- Fonctions utilitaires disponibles:
-  - `get_ball(client)`
-  - `get_robot(client, team, number)`
-  - `get_goal_sign(client, team)`
-  - `...`
+- Les fonctions d'update utilisent des paramètres explicites: `(client, team, number, goal_sign, ball, data_dict)`
+- Fonctions utilitaires disponibles dans `util.bot`:
+  - `get_robot(client, team, number)` — retourne le robot avec validation de position
+  - `can_play(bot, referee)` — vérifie si le robot peut jouer (non pénalisé)
 
 ## Fonctionnement général - détaillé
 
 - <u>Architecture principale</u>:
   Le programme est organisé autour de fonctions d'update appelées en boucle par `start_client()`. Chaque bot est exécuté avec la signature:
-  `update_func(client, team, number, data_dict)`
+  `update_func(client, team, number, goal_sign, ball, data_dict)`
   où:
   - `client`: connexion au game_controller
   - `team`: "blue" ou "green"
   - `number`: numéro du robot (1 ou 2)
-  - `data_dict`: dictionnaire d'état fourni par get_*_dict()
+  - `goal_sign`: -1 ou 1 (orientation du but adverse)
+  - `ball`: position actuelle de la balle [x, y]
+  - `data_dict`: dictionnaire d'état persistant fourni par `get_*_dict()`
 
 - <u>Démarrage des clients</u>:  
   Utiliser `start_client(update_func, number, data_dict)` pour lancer un client. `__main__.py` montre un [exemple](src/__main__.py) qui lance deux threads (un pour chaque robot).
@@ -99,25 +99,53 @@ _Voir la documentation de la bibliothèque pour plus d'informations._
   - `shooter_update()` : positionne le robot pour tirer et gère l'évitement de la règle du "ball abuse", le positionnement de tir et l'action de kick.  
   - `goalkeeper_update()` : calcule la meilleure position défensive, suit la trajectoire de la balle et effectue les dégagements si nécessaire.
 
-- <u>Fonctions utilitaires</u>:  
-  Fonctions utiles disponibles pour simplifier l'accès aux données du client:
-  - `get_ball(client)`: retourne la position actuelle de la balle (copie).
-  - `get_robot(client, team, number)`: retourne le robot et vérifie qu'il a une position.
-  - `get_goal_sign(client, team)`: signe du but selon l'orientation de l'équipe.
-  - -> Ces fonctions réduisent le nombre d'accès directs à client.robots et clarifient le flux de données.
+- <u>Fonctions utilitaires (src.util.math)</u>:  
+  Fonctions mathématiques pour les calculs géométriques:
+  - `faces_ball(robot, ball, margin)`: vérifie si le robot pointe vers la balle
+  - `is_inside_circle(point, center, radius)`: point dans un cercle
+  - `is_inside_court(pos)`: position dans les limites du terrain
+  - `angle_of(vector)`: angle d'un vecteur
+  - `normalized(vector)`: normalise un vecteur
+  - `get_shoot_position(goal_pos, ball_pos, offset)`: calcule la position optimale pour tirer
+  - `line_intersects_circle(...)`: intersection ligne-cercle
+  - `project_on_line(...)`: projection d'un point sur une ligne
+
+- <u>Prédiction de la balle (src.bot.ball_anticipation)</u>:  
+  Module spécialisé pour anticiper la trajectoire future de la balle:
+  - `get_ball_velocity(client)`: vitesse actuelle de la balle
+  - `get_ball_acceleration(client)`: accélération de la balle
+  - `get_dynamic_future_ball(client)`: position prédite avec ajustement du latency
+  - Détecte automatiquement les tirs (kick detection) et ignore les artefacts d'accélération
 
 - <u>Robustesse et erreurs</u>:  
-  `start_client()` intercepte les exceptions `rsk.client.ClientError` et logge proprement les erreurs. Les fonctions d'update doivent lever ces erreurs si des données critiques (ex. position de la balle ou du robot) sont manquantes.
-- <u>Conseils pour débutants</u>:  
-  - Lire d'abord les `get_*_dict()` pour comprendre quelles clés sont attendues dans data_dict.  
-  - Tester chaque update.  
-  - Ajouter des petites docstrings et logs si un comportement semble obscur.
+  `start_client()` intercepte les exceptions `rsk.client.ClientError` et les logge proprement. Les fonctions d'update doivent lever ces erreurs si des données critiques (ex. position du robot) sont manquantes.
 
-## Exemple en code
+- <u>Conseils de développement</u>:  
+  - Lire d'abord les `get_*_dict()` pour comprendre quelles clés sont attendues dans `data_dict`
+  - Utiliser `get_logger("nom_module")` pour les logs formatés avec couleurs
+  - Tester avec `src/test/` pour déboguer isolément
+  - Consulter `rsk_llm_docs.md` pour la documentation complète de la librairie rsk
 
-```py
+## Exemple d'utilisation
+
+### Lancer les deux robots avec gestion des rôles (défaut)
+```bash
+python ./src --team blue --host 127.0.0.1 --key "YOUR_KEY"
+```
+
+### Lancer un robot personnalisé
+```python
 from src.bot.role_manager import role_manager_update, get_role_manager_dict
 from src.util.init import start_client
 
+# Lance le robot 1 avec la stratégie de gestion des rôles
 start_client(role_manager_update, number=1, data_dict=get_role_manager_dict())
+```
+
+### Lancer le shooter seul (test)
+```python
+from src.bot.shooter import shooter_update, get_shooter_dict
+from src.util.init import start_client
+
+start_client(shooter_update, number=1, data_dict=get_shooter_dict())
 ```

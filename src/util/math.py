@@ -9,7 +9,7 @@ HALF_FIELD_WIDTH = rsk.constants.field_width / 2
 HALF_DEFENSE_AREA_WIDTH = rsk.constants.defense_area_width / 2
 
 
-def faces_ball(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 0.02) -> bool:
+def faces_object(robot: rsk.client.ClientRobot, ball: array_type, margin: float = 0.02) -> bool:
     """
     :description: Prend un robot et une marge et retourne si le robot pointe vers le ballon
     :param robot: objet robot à utiliser pour les calculs
@@ -134,3 +134,14 @@ def project_on_line(point: array_type, line_point1: array_type, line_point2: arr
     if segment:
         t = np.clip(t, 0, 1)
     return line_vector * t + line_point1
+
+def distance_to_line(point: array_type, line_point1: array_type, line_point2: array_type, segment: bool = True) -> float:
+    """
+    :description: Retourne la distance minimale d'un point à une droite
+    :param point: point à projeter, doit être un tableau numpy
+    :param line_point1: premier point de la ligne, doit être un tableau numpy
+    :param line_point2: deuxième point de la ligne, doit être un tableau numpy
+    :param segment: s'il faut considérer la ligne comme un segment (limiter la projection entre line_point1 et line_point2)
+    :return: Le point projeté sur la ligne (tableau numpy)
+    """
+    return np.linalg.norm(project_on_line(point, line_point1, line_point2, segment) - point)

@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 
 
-def getLogger(name: str | None = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.propagate = False
     logger.setLevel(logging.DEBUG)

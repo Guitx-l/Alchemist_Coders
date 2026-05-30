@@ -1,12 +1,12 @@
 import rsk
 import time
 from src.util.init import update_function_type
-from src.util.log import getLogger
+from src.util.log import get_logger
 
 
 def get_rate_limiter_dict(sub_client_update_func: update_function_type = lambda *x: None, sub_client_dict: dict = {}, refresh_rate: float = 60) -> dict:
     return {
-        "logger": getLogger("rate_limiter"),
+        "logger": get_logger("rate_limiter"),
         "client_data": sub_client_dict,
         "client_update": sub_client_update_func,
         "update_period": 1 / refresh_rate,

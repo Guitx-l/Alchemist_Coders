@@ -5,25 +5,25 @@ import random
 import logging
 import numpy as np
 from src.util.math import array_type
-from src.util.log import getLogger
+from src.util.log import get_logger
 from src.util.init import start_client
 from src.util.math import (
     angle_of, 
     normalized, 
     line_intersects_circle, 
     get_shoot_position, 
-    faces_ball, 
+    faces_object, 
     is_inside_circle, 
     is_inside_court, 
-    get_angle_between
+    distance_to_line
 )
-from src.bot.ball_anticipation import get_dynamic_future_ball, get_ball_velocity
+from src.bot.ball_anticipation import get_dynamic_future_ball
 from src.util.bot import get_robot, can_play
 # Ritchy Thibault
 
 MISALIGNMENT_ANGLE = math.radians(25)
 ALIGNED_SHOOT_OFFSET = -0.2
-MISALIGNED_SHOOT_OFFSET = 0.2
+MISALIGNED_SHOOT_OFFSET = 0.18
 
 BALL_BEHIND_ANGLE = math.radians(100)
 BALL_BEHIND_VECTOR_LENGTH = 0.23
@@ -38,13 +38,13 @@ BOTTOM_BALL_BEHIND_VECTORS = {
 
 BALL_ABUSE_THRESHOLD = 2.5
 
-KICK_CIRCLE_RADIUS = 0.135
+KICK_CIRCLE_RADIUS = 0.14
 KICK_TIME_THRESHOLD = 1.0
 
-SHOOT_POSITIONS_SWEEP_NUMBER = 10
+SHOOT_POSITIONS_SWEEP_NUMBER = 5
 SHOOT_POSITIONS = {
-    -1: np.array([0.92, 0.0]),
-    1: np.array([-0.92, 0.0])
+    -1: [np.array([-0.92, y]) for y in np.linspace(-0.25, 0.25, SHOOT_POSITIONS_SWEEP_NUMBER)],
+    1: [np.array([0.92, y]) for y in np.linspace(-0.25, 0.25, SHOOT_POSITIONS_SWEEP_NUMBER)]
 }
 
 
@@ -52,7 +52,7 @@ def get_shooter_dict() -> dict:
     return {
         "last_kick": time.time(),
         "goal_pos": np.array([0.0, 0.0]),
-        "logger": getLogger("shooter"),
+        "logger": get_logger("shooter"),
         "last_ball_overlap": time.time(),
     }
 
@@ -74,34 +74,54 @@ def evade_ball_abuse(shooter: rsk.client.ClientRobot, ball: array_type, data: di
     return False
 
 
-def get_goal_position(client: rsk.Client, ball: array_type, team: str, data: dict) -> array_type:
-        i = 0
-        opp_robot_1 = get_robot(client, "green" if team == "blue" else "blue", 1)
-        opp_robot_2 = get_robot(client, "green" if team == "blue" else "blue", 2)
-        new_goal_pos = data["goal_pos"].copy()
-        modified = False
-      
-        while (
-            (line_intersects_circle(ball, new_goal_pos, opp_robot_1.position, 0.1) or line_intersects_circle(ball, new_goal_pos, opp_robot_2.position, 0.1)) 
-            and i < 10
-        ):
-            i += 1
-            new_goal_pos[1] = random.random() * 0.6 - 0.3
-            modified = True
+def is_good_trajectory(ball: array_type, goal_pos: array_type, defenders: list[rsk.client.ClientRobot]):
+    return all(not line_intersects_circle(ball, goal_pos, robot.position, rsk.constants.robot_radius, segment=True) for robot in defenders)
 
-        if i >= 10:
-            modified = False
-        if modified:
-            # data["logger"].debug(f"Goal position reset: Could find a trajectory after {i} attempts ({round(data['goal_pos'][1], 3)} -> {round(new_goal_pos[1], 3)})")
-            data["goal_pos"] = new_goal_pos
-        return data["goal_pos"]
+def get_goal_position(client: rsk.Client, shooter: rsk.client.ClientRobot, ball: array_type, team: str, data: dict, goal_sign: int) -> array_type:
+    opp_robot_1 = get_robot(client, "green" if team == "blue" else "blue", 1)
+    opp_robot_2 = get_robot(client, "green" if team == "blue" else "blue", 2)
+    old_goal_pos: array_type = data["goal_pos"]
+    optimal_position = np.array([0.92 * goal_sign, shooter.pose[1] + (math.tan(shooter.pose[2]) * (0.92 * goal_sign - shooter.pose[0]))])
+    optimal_position[1] = np.clip(optimal_position[1], -0.25, 0.25)
+    new_goal_pos = optimal_position
+    
+    defenders = [
+        i for i in [opp_robot_1, opp_robot_2] 
+        if can_play(i, client.referee) 
+        if i.position[0] * goal_sign > ball[0] * goal_sign
+    ]
+
+    if is_good_trajectory(ball, old_goal_pos, defenders):
+        return old_goal_pos
+
+    possible_goal_pos = [pos for pos in SHOOT_POSITIONS[goal_sign] if is_good_trajectory(ball, pos, defenders)]
+
+    if len(defenders) == 0 or is_good_trajectory(ball, optimal_position, defenders) or len(possible_goal_pos) == 0:
+        data["goal_pos"] = optimal_position
+        return optimal_position
+    
+    def goal_position_key(goal_position: np.ndarray) -> float:
+        closest_defender = min(defenders, key=lambda robot: distance_to_line(robot.position, goal_position, ball, segment=True))
+        return distance_to_line(closest_defender.position, goal_position, ball, segment=True)
+
+    new_goal_pos = max(possible_goal_pos, key=goal_position_key)
+    data["goal_pos"] = new_goal_pos
+    return new_goal_pos 
+
 
 
 def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, ball: array_type, data: dict) -> None: # average fps = 90
     logger: logging.Logger = data["logger"]
+    if client.referee['game_paused']:
+        data['last_ball_overlap'] = time.time()
+
+    is_kicking = False
+    future_ball = get_dynamic_future_ball(client)
+    if future_ball is None:
+        future_ball = ball
     shooter: rsk.client.ClientRobot = get_robot(client, team, number)
-    goal_pos: array_type = data["goal_pos"]
-    future_ball = get_dynamic_future_ball(client) or ball
+    goal_pos = get_goal_position(client, shooter, future_ball, team, data, goal_sign)
+
 
     if client.referee['game_paused']:
         data['last_ball_overlap'] = time.time()
@@ -109,7 +129,6 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
     if evade_ball_abuse(shooter, ball, data) or not can_play(shooter, client.referee):
         return
 
-    goal_pos[0] = 0.92 * goal_sign
     target = shooter.pose.copy()
 
     if not is_inside_court(ball):
@@ -128,22 +147,20 @@ def shooter_update(client: rsk.Client, team: str, number: int, goal_sign: int, b
 
     # else if the ball, the shooter and the goal and kind of misaligned or the shooter is inside the timed circle
     elif (
-        get_angle_between(shooter.position - goal_pos, ball - goal_pos) > MISALIGNMENT_ANGLE
-        or (is_inside_timed_circle(shooter, ball) and not faces_ball(shooter, ball, margin=0.01))
+        is_inside_timed_circle(shooter, ball) 
+        and faces_object(shooter, ball) and faces_object(shooter, goal_pos)
     ):
-        goal_pos = get_goal_position(client, future_ball, team, data)
-        target = get_shoot_position(goal_pos, future_ball, MISALIGNED_SHOOT_OFFSET)
-    else:
-        goal_pos = get_goal_position(client, future_ball, team, data)
         target = get_shoot_position(goal_pos, future_ball, ALIGNED_SHOOT_OFFSET)
-
-        if is_inside_circle(shooter.position, ball, KICK_CIRCLE_RADIUS) and faces_ball(shooter, ball, margin=0):
+        if np.linalg.norm(shooter.position - ball) < KICK_CIRCLE_RADIUS:
             logger.debug("Kicking...")
             shooter.kick(1)
             data["last_kick"] = time.time()
+            is_kicking = True
+    else:
+        target = get_shoot_position(goal_pos, future_ball, MISALIGNED_SHOOT_OFFSET)
 
-    
-    shooter.goto(target, wait=False)
+    if not is_kicking:
+        shooter.goto(target, wait=False)
 
 
 if __name__ == "__main__":
